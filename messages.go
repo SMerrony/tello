@@ -50,14 +50,14 @@ const (
 // Tello messages
 const (
 	msgDoConnect         = 0x0001 // 1
-	msgMsgConnected      = 0x0002 // 2
+	msgConnected         = 0x0002 // 2
 	msgGetSSID           = 0x0011 // 17
 	msgSetSSID           = 0x0012 // 18
 	msgGetSSIDPass       = 0x0013 // 19
 	msgSetSSIDPass       = 0x0014 // 20
 	msgGetWifiRegion     = 0x0015 // 21
 	msgSetWifiRegion     = 0x0016 // 22
-	msgMsgWifiStrength   = 0x001a // 26
+	msgWifiStrength      = 0x001a // 26
 	msgSetVideoBitrate   = 0x0020 // 32
 	msgSetDynAdjRate     = 0x0021 // 33
 	msgEisSetting        = 0x0024 // 36
@@ -67,10 +67,10 @@ const (
 	msgSwitchPicVideo    = 0x0031 // 49
 	msgDoStartRec        = 0x0032 // 50
 	msgExposureVals      = 0x0034 // 52 (Get or set?)
-	msgMsgLightStrength  = 0x0035 // 53
+	msgLightStrength     = 0x0035 // 53
 	msgGetJPEGQuality    = 0x0037 // 55
-	msgMsgError1         = 0x0043 // 67
-	msgMsgError2         = 0x0044 // 68
+	msgError1            = 0x0043 // 67
+	msgError2            = 0x0044 // 68
 	msgGetVersion        = 0x0045 // 69
 	msgSetDateTime       = 0x0046 // 70
 	msgGetActivationTime = 0x0047 // 71
@@ -78,19 +78,19 @@ const (
 	msgSetStick          = 0x0050 // 80
 	msgDoTakeoff         = 0x0054 // 84
 	msgDoLand            = 0x0055 // 85
-	msgMsgFlightStatus   = 0x0056 // 86
+	msgFlightStatus      = 0x0056 // 86
 	msgSetHeightLimit    = 0x0058 // 88
 	msgDoFlip            = 0x005c // 92
 	msgDoThrowTakeoff    = 0x005d // 93
 	msgDoPalmLand        = 0x005e // 94
-	msgMsgFileSize       = 0x0062 // 98
-	msgMsgFileData       = 0x0063 // 99
-	msgMsgFileDone       = 0x0064 // 100
+	msgFileSize          = 0x0062 // 98
+	msgFileData          = 0x0063 // 99
+	msgFileDone          = 0x0064 // 100
 	msgDoSmartVideo      = 0x0080 // 128
 	msgGetSmartVideo     = 0x0081 // 129
-	msgMsgLogHeader      = 0x1050 // 4176
-	msgMsgLogData        = 0x1051 // 4177
-	msgMsgLogConfig      = 0x1052 // 4178
+	msgLogHeader         = 0x1050 // 4176
+	msgLogData           = 0x1051 // 4177
+	msgLogConfig         = 0x1052 // 4178
 	msgDoBounce          = 0x1053 // 4179
 	msgDoCalibration     = 0x1054 // 4180
 	msgSetLowBattThresh  = 0x1055 // 4181
@@ -118,6 +118,16 @@ const (
 	sv360    = 1
 	svCircle = 2
 	svUpOut  = 3
+)
+
+// video bit rate (mbps)
+const (
+	vbrAuto = iota
+	vbr1M
+	vbr1M5
+	vbr2M
+	vbr3M
+	vbr4M
 )
 
 // FlightData payload from the Tello

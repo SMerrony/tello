@@ -25,50 +25,88 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"sync"
 )
 
 const (
-	defaultAddr        = "192.168.10.1"
-	defaultCommandPort = 8889
-	defaultLocalPort   = 8888
-	defaultVideoPort   = 6038
+	defaultTelloAddr        = "192.168.10.1"
+	defaultTelloControlPort = 8889
+	defaultLocalControlPort = 8800
+	defaultTelloVideoPort   = 6038
+	defaultLocalVideoPort   = 8801
 )
 
-func ControlConnect(udpAddr string, droneUdpPort int, localUdpPort int) (ctrlConn *net.UDPConn, err error) {
+type Tello struct {
+	ctrlConn, videoConn         *net.UDPConn
+	ctrlStopChan, videoStopChan chan bool
+	ctrlMu                      sync.Mutex
+}
+
+func (tello *Tello) ControlConnect(udpAddr string, droneUdpPort int, localUdpPort int) (err error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUdpPort))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUdpPort))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	ctrlConn, err = net.DialUDP("udp", localAddr, droneAddr)
+	tello.ctrlConn, err = net.DialUDP("udp", localAddr, droneAddr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return ctrlConn, nil
+	tello.ctrlStopChan = make(chan bool, 2)
+	go tello.ControlResponseListener()
+	return nil
 }
 
-func ControlConnectDefault() (ctrlConn *net.UDPConn, err error) {
-	return ControlConnect(defaultAddr, defaultCommandPort, defaultLocalPort)
+func (tello *Tello) ControlConnectDefaultTello() (err error) {
+	return tello.ControlConnect(defaultTelloAddr, defaultTelloControlPort, defaultLocalControlPort)
 }
 
-func ControlDisconnect(ctrlConn *net.UDPConn) {
-	ctrlConn.Close()
+func (tello *Tello) ControlDisconnect() {
+	tello.ctrlStopChan <- true
+	tello.ctrlConn.Close()
 }
 
-func ControlResponseListener(ctrlConn *net.UDPConn, stop <-chan bool) {
+func (tello *Tello) VideoConnect(udpAddr string, droneUdpPort int, localUdpPort int) (err error) {
+	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUdpPort))
+	if err != nil {
+		return err
+	}
+	localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUdpPort))
+	if err != nil {
+		return err
+	}
+	tello.videoConn, err = net.DialUDP("udp", localAddr, droneAddr)
+	if err != nil {
+		return err
+	}
+	tello.videoStopChan = make(chan bool, 2)
+	go tello.VideoResponseListener()
+	return nil
+}
+
+func (tello *Tello) VideoConnectDefaultTello() (err error) {
+	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort, defaultLocalVideoPort)
+}
+
+func (tello *Tello) VideoDisconnect() {
+	tello.videoStopChan <- true
+	tello.videoConn.Close()
+}
+
+func (tello *Tello) ControlResponseListener() {
 	buff := make([]byte, 4096)
 	var msgType uint16
 
 	for {
-		_, err := ctrlConn.Read(buff)
+		_, err := tello.ctrlConn.Read(buff)
 		select {
-		case <-stop:
+		case <-tello.ctrlStopChan:
 			log.Println("ControlResponseLister stopped")
 			return
-		default:
+		defaultTello:
 		}
 		if err != nil {
 			log.Printf("Network Read Error - %v\n", err)
@@ -78,12 +116,20 @@ func ControlResponseListener(ctrlConn *net.UDPConn, stop <-chan bool) {
 			} else {
 				msgType = (uint16(buff[6]) << 8) | uint16(buff[5])
 				switch msgType {
-
-				default:
+				case msgFlightStatus:
+				defaultTello:
 					log.Printf("Unknown message type from Tello <%d>\n", msgType)
 				}
 			}
 		}
 
 	}
+}
+
+func (tello *Tello) TakeOff() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	// populate the command packet
+	// send the command packet
 }

@@ -30,15 +30,16 @@ import (
 // use go test -count=1 to bypass test caching
 
 func TestControlConnectDisconnect(t *testing.T) {
-	conn, err := ControlConnectDefault()
+	drone := new(Tello)
+	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
 	}
 	log.Println("Connected to Tello")
-	stop := make(chan bool, 2)
-	go ControlResponseListener(conn, stop)
+
+	//go ControlResponseListener(conn, stop)
 	time.Sleep(10 * time.Second)
-	stop <- true
-	ControlDisconnect(conn)
+
+	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
