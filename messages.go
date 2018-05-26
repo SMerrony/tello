@@ -27,11 +27,11 @@ type packet struct {
 	header        byte
 	size13        uint16
 	crc8          byte
-	toDrone       bool // the following 4 fields are encoded in a single byte in the raw packet
-	fromDrone     bool
-	packetType    byte // 3-bit
-	packetSubtype byte // 3-bit
-	message       uint16
+	fromDrone     bool // the following 4 fields are encoded in a single byte in the raw packet
+	toDrone       bool
+	packetType    uint8 // 3-bit
+	packetSubtype uint8 // 3-bit
+	messageID     uint16
 	sequence      uint16
 	payload       []byte
 	crc16         uint16
@@ -47,7 +47,7 @@ const (
 	ptFlip     = 6
 )
 
-// Tello messages
+// Tello message IDs
 const (
 	msgDoConnect         = 0x0001 // 1
 	msgConnected         = 0x0002 // 2
@@ -174,4 +174,22 @@ type FlightData struct {
 func createBufferForMsgType(mType int) (buff []byte) {
 
 	return buff
+}
+
+// bufferToPacket takes a raw buffer of bytes and populates our packet struct
+func bufferToPacket(buff []byte) (pkt packet) {
+	pkt.header = buff[0]
+	pkt.size13 = (uint16(buff[1]) + uint16(buff[2])<<8) >> 3
+	pkt.crc8 = buff[3]
+	pkt.fromDrone = (buff[4] & 0x80) == 1
+	pkt.toDrone = (buff[4] & 0x40) == 1
+	pkt.packetType = uint8((buff[4] << 2) >> 3)
+	pkt.packetSubtype = uint8(buff[4] & 0x07)
+	pkt.messageID = (uint16(buff[6]) << 8) | uint16(buff[5])
+	pkt.sequence = (uint16(buff[8]) << 8) | uint16(buff[7])
+	payloadSize := pkt.size13 - 11
+	pkt.payload = make([]byte, payloadSize)
+	copy(pkt.payload, buff[9:9+payloadSize-1])
+	pkt.crc16 = uint16(buff[pkt.size13-1])<<8 + uint16(buff[pkt.size13-2])
+	return pkt
 }
