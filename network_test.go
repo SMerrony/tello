@@ -30,16 +30,24 @@ import (
 // use go test -count=1 to bypass test caching
 
 func TestControlConnectDisconnect(t *testing.T) {
+
 	drone := new(Tello)
+
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
 	}
-	log.Println("Connected to Tello")
+	log.Println("Connected to Tello control channel")
 
-	//go ControlResponseListener(conn, stop)
+	// err = drone.VideoConnectDefault()
+	// if err != nil {
+	// 	log.Fatalf("Video connect failed with %v", err)
+	// }
+	// log.Println("Connected to Tello video channel")
+
 	time.Sleep(10 * time.Second)
 
+	//drone.VideoDisconnect()
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }

@@ -22,6 +22,7 @@
 package tello
 
 import (
+	"bytes"
 	"log"
 	"net"
 	"strconv"
@@ -39,9 +40,12 @@ const (
 type Tello struct {
 	ctrlConn, videoConn         *net.UDPConn
 	ctrlStopChan, videoStopChan chan bool
+	connecting, connected       bool
 	ctrlMu                      sync.Mutex
 }
 
+// ControlConnect attempts to connect to a Tello at the provided network addr.
+// It then starts listening for responses on the control channel.
 func (tello *Tello) ControlConnect(udpAddr string, droneUdpPort int, localUdpPort int) (err error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUdpPort))
 	if err != nil {
@@ -55,16 +59,26 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUdpPort int, localUdpPor
 	if err != nil {
 		return err
 	}
+
+	// start the control listener Goroutine
 	tello.ctrlStopChan = make(chan bool, 2)
 	go tello.ControlResponseListener()
+
+	// say hello to the Tello
+	tello.sendConnectRequest(defaultTelloVideoPort)
+
 	return nil
 }
 
-func (tello *Tello) ControlConnectDefaultTello() (err error) {
+// ControlConnectDefault attempts to connect to a Tello on the default network addresses.
+// It then starts listening for responses on the control channel.
+func (tello *Tello) ControlConnectDefault() (err error) {
 	return tello.ControlConnect(defaultTelloAddr, defaultTelloControlPort, defaultLocalControlPort)
 }
 
+// ControlDisconnect stops the control channel listener and closes the connection to a Tello
 func (tello *Tello) ControlDisconnect() {
+	// TODO should we tell the Tello we are disconnecting?
 	tello.ctrlStopChan <- true
 	tello.ctrlConn.Close()
 }
@@ -74,11 +88,11 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUdpPort int, localUdpPort 
 	if err != nil {
 		return err
 	}
-	localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUdpPort))
-	if err != nil {
-		return err
-	}
-	tello.videoConn, err = net.DialUDP("udp", localAddr, droneAddr)
+	// localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUdpPort))
+	// if err != nil {
+	// 	return err
+	// }
+	tello.videoConn, err = net.ListenUDP("udp", droneAddr)
 	if err != nil {
 		return err
 	}
@@ -87,11 +101,12 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUdpPort int, localUdpPort 
 	return nil
 }
 
-func (tello *Tello) VideoConnectDefaultTello() (err error) {
+func (tello *Tello) VideoConnectDefault() (err error) {
 	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort, defaultLocalVideoPort)
 }
 
 func (tello *Tello) VideoDisconnect() {
+	// TODO Shoul we tell the Tello we are stopping video listening?
 	tello.videoStopChan <- true
 	tello.videoConn.Close()
 }
@@ -101,12 +116,28 @@ func (tello *Tello) ControlResponseListener() {
 	var msgType uint16
 
 	for {
-		_, err := tello.ctrlConn.Read(buff)
+		n, err := tello.ctrlConn.Read(buff)
+
+		// the initial connect response is different...
+		if tello.connecting && n == 11 {
+			if bytes.ContainsAny(buff, "conn_ack:") {
+				// TODO handle returned video port?
+				log.Printf("Debug: conn_ack received, buffer len: %d\n", n)
+				tello.ctrlMu.Lock()
+				tello.connecting = false
+				tello.connected = true
+				tello.ctrlMu.Unlock()
+			} else {
+				log.Printf("Unexpected response to connection request <%s>\n", string(buff))
+			}
+			continue
+		}
+
 		select {
 		case <-tello.ctrlStopChan:
 			log.Println("ControlResponseLister stopped")
 			return
-		defaultTello:
+		default:
 		}
 		if err != nil {
 			log.Printf("Network Read Error - %v\n", err)
@@ -117,13 +148,34 @@ func (tello *Tello) ControlResponseListener() {
 				msgType = (uint16(buff[6]) << 8) | uint16(buff[5])
 				switch msgType {
 				case msgFlightStatus:
-				defaultTello:
+				case msgLightStrength:
+					log.Println("Light strength received")
+				case msgLogHeader:
+					log.Println("Log header received")
+				case msgWifiStrength:
+					log.Println("Wifi strength received")
+				default:
 					log.Printf("Unknown message type from Tello <%d>\n", msgType)
 				}
 			}
 		}
 
 	}
+}
+
+func (tello *Tello) VideoResponseListener() {
+
+}
+
+func (tello *Tello) sendConnectRequest(videoPort uint16) {
+	// the initial connect request is different to the usual packets...
+	msgBuff := []byte("conn_req:lh")
+	msgBuff[9] = byte(videoPort & 0xff)
+	msgBuff[10] = byte(videoPort >> 8)
+	tello.ctrlMu.Lock()
+	tello.connecting = true
+	tello.ctrlConn.Write(msgBuff)
+	tello.ctrlMu.Unlock()
 }
 
 func (tello *Tello) TakeOff() {

@@ -170,3 +170,8 @@ type FlightData struct {
 	WifiStrength             int8
 	WindState                bool
 }
+
+func createBufferForMsgType(mType int) (buff []byte) {
+
+	return buff
+}
