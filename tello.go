@@ -23,10 +23,12 @@ package tello
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"net"
 	"strconv"
 	"sync"
+	"time"
 )
 
 const (
@@ -45,10 +47,11 @@ type Tello struct {
 	ctrlMu                      sync.Mutex
 	dataMu                      sync.RWMutex
 	fd                          FlightData // our private amalgamated store of the latest data
+	streamingData               bool       // are we currently sending FlightData out?
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
-// It then starts listening for responses on the control channel.
+// It then starts listening for responses on the control channel and waits for the Tello to respond
 func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
@@ -70,11 +73,22 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	// say hello to the Tello
 	tello.sendConnectRequest(defaultTelloVideoPort)
 
+	// wait up to 3 seconds for the Tello to respond
+	for t := 0; t < 10; t++ {
+		if tello.connected {
+			break
+		}
+		time.Sleep(333 * time.Millisecond)
+	}
+	if !tello.connected {
+		return errors.New("Timeout waiting for response to connection request from Tello")
+	}
+
 	return nil
 }
 
 // ControlConnectDefault attempts to connect to a Tello on the default network addresses.
-// It then starts listening for responses on the control channel.
+// It then starts listening for responses on the control channel and waits for the Tello to respond
 func (tello *Tello) ControlConnectDefault() (err error) {
 	return tello.ControlConnect(defaultTelloAddr, defaultTelloControlPort, defaultLocalControlPort)
 }
@@ -112,7 +126,7 @@ func (tello *Tello) VideoConnectDefault() (err error) {
 
 // VideoDisconnect closes the connecttion to the video channel
 func (tello *Tello) VideoDisconnect() {
-	// TODO Shoul we tell the Tello we are stopping video listening?
+	// TODO Should we tell the Tello we are stopping video listening?
 	tello.videoStopChan <- true
 	tello.videoConn.Close()
 }
@@ -123,6 +137,34 @@ func (tello *Tello) GetFlightData() FlightData {
 	rfd := tello.fd
 	tello.dataMu.RUnlock()
 	return rfd
+}
+
+// StreamFlightData starts a Goroutine which sends FlightData to a channel
+// If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored
+// If asAvailable is false then updates are send every periodMs
+// This streamer does not block on the channel, so unconsumed updates are lost
+func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) <-chan FlightData {
+	if tello.streamingData {
+		return nil
+	}
+	fdChan := make(chan FlightData, 2)
+	if asAvailable {
+		log.Fatal("asAvailable FlightData stream not yet implemented") // TODO
+	} else {
+		go func() {
+			for {
+				tello.dataMu.RLock()
+				select {
+				case fdChan <- tello.fd:
+				default:
+				}
+				tello.dataMu.RUnlock()
+				time.Sleep(periodMs * time.Millisecond)
+			}
+		}()
+	}
+
+	return fdChan
 }
 
 func (tello *Tello) controlResponseListener() {

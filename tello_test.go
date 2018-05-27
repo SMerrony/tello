@@ -51,3 +51,23 @@ func TestControlConnectDisconnect(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
+
+func TestStreamingData(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+
+	fdc := drone.StreamFlightData(false, 1000)
+
+	for i := 1; i <= 10; i++ {
+		myFD := <-fdc
+		log.Printf("Got FlightData with WifiStrength: %d", myFD.WifiStrength)
+	}
+
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+}
