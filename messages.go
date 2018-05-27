@@ -37,6 +37,8 @@ type packet struct {
 	crc16         uint16
 }
 
+const minPktSize = 11 // smallest possible raw packet
+
 // tello packet types, 3 and 7 currently unknown
 const (
 	ptExtended = 0
@@ -192,4 +194,38 @@ func bufferToPacket(buff []byte) (pkt packet) {
 	copy(pkt.payload, buff[9:9+payloadSize-1])
 	pkt.crc16 = uint16(buff[pkt.size13-1])<<8 + uint16(buff[pkt.size13-2])
 	return pkt
+}
+
+// pack the packet into raw buffer format and calculate CRCs etc.
+func packetToBuffer(pkt packet) (buff []byte) {
+	// create a buffer of the right size
+	payloadSize := len(pkt.payload)
+	packetSize := minPktSize + payloadSize
+	buff = make([]byte, packetSize)
+
+	// copy each field, manipulating if necessary
+	buff[0] = pkt.header
+	buff[1] = byte(packetSize << 3)
+	buff[2] = byte(packetSize >> 5)
+	buff[3] = calculateCRC8(buff[0:3])
+	buff[4] = pkt.packetSubtype + (pkt.packetType << 3)
+	if pkt.toDrone {
+		buff[4] |= 0x40
+	}
+	if pkt.fromDrone {
+		buff[4] |= 0x80
+	}
+	buff[5] = byte(pkt.messageID)
+	buff[6] = byte(pkt.messageID >> 8)
+	buff[7] = byte(pkt.sequence)
+	buff[8] = byte(pkt.sequence >> 8)
+
+	for p := 0; p < payloadSize; p++ {
+		buff[9+p] = pkt.payload[p]
+	}
+	crc16 := calculateCRC16(buff[0 : 9+payloadSize])
+	buff[9+payloadSize] = byte(crc16)
+	buff[10+payloadSize] = byte(crc16 >> 8)
+
+	return buff
 }

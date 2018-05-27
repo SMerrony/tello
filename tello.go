@@ -45,6 +45,7 @@ type Tello struct {
 	ctrlConn, videoConn           *net.UDPConn
 	ctrlStopChan, videoStopChan   chan bool
 	ctrlConnecting, ctrlConnected bool
+	ctrlSeq                       uint16
 	fdMu                          sync.RWMutex // this mutex protects the flight data fields
 	fd                            FlightData   // our private amalgamated store of the latest data
 	fdStreaming                   bool         // are we currently sending FlightData out?
@@ -275,6 +276,43 @@ func (tello *Tello) TakeOff() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 	// create the command packet
-	// populate the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptSet
+	pkt.messageID = msgDoTakeoff
+	tello.ctrlSeq++
+	pkt.sequence = tello.ctrlSeq
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
 	// send the command packet
+	tello.ctrlConn.Write(buff)
+}
+
+// Land sends a normal Land request to the Tello
+func (tello *Tello) Land() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptSet
+	pkt.messageID = msgDoLand
+	tello.ctrlSeq++
+	pkt.sequence = tello.ctrlSeq
+	pkt.payload = make([]byte, 1)
+	pkt.payload[0] = 0
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
+	// send the command packet
+	tello.ctrlConn.Write(buff)
 }
