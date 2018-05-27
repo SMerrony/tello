@@ -61,7 +61,10 @@ func TestStreamingData(t *testing.T) {
 	}
 	log.Println("Connected to Tello control channel")
 
-	fdc := drone.StreamFlightData(false, 1000)
+	fdc, err := drone.StreamFlightData(false, 1000)
+	if err != nil {
+		log.Fatalf("StreamFlighData failed with error %v", err)
+	}
 
 	for i := 1; i <= 10; i++ {
 		myFD := <-fdc

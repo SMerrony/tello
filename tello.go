@@ -41,18 +41,30 @@ const (
 
 // Tello holds the current state of a connection to a Tello drone
 type Tello struct {
-	ctrlConn, videoConn         *net.UDPConn
-	ctrlStopChan, videoStopChan chan bool
-	connecting, connected       bool
-	ctrlMu                      sync.Mutex
-	dataMu                      sync.RWMutex
-	fd                          FlightData // our private amalgamated store of the latest data
-	streamingData               bool       // are we currently sending FlightData out?
+	ctrlMu                        sync.RWMutex // this mutex protects the control fields
+	ctrlConn, videoConn           *net.UDPConn
+	ctrlStopChan, videoStopChan   chan bool
+	ctrlConnecting, ctrlConnected bool
+	fdMu                          sync.RWMutex // this mutex protects the flight data fields
+	fd                            FlightData   // our private amalgamated store of the latest data
+	fdStreaming                   bool         // are we currently sending FlightData out?
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
 // It then starts listening for responses on the control channel and waits for the Tello to respond
 func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
+	// first check that we are not already connected or connecting
+	tello.ctrlMu.RLock()
+	if tello.ctrlConnected {
+		tello.ctrlMu.RUnlock()
+		return errors.New("Tello already connected")
+	}
+	if tello.ctrlConnecting {
+		tello.ctrlMu.RUnlock()
+		return errors.New("Tello connection attempt already in progress")
+	}
+	tello.ctrlMu.RUnlock()
+
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
 		return err
@@ -61,13 +73,17 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	if err != nil {
 		return err
 	}
+	tello.ctrlMu.Lock()
 	tello.ctrlConn, err = net.DialUDP("udp", localAddr, droneAddr)
+	tello.ctrlMu.Unlock()
 	if err != nil {
 		return err
 	}
 
 	// start the control listener Goroutine
+	tello.ctrlMu.Lock()
 	tello.ctrlStopChan = make(chan bool, 2)
+	tello.ctrlMu.Unlock()
 	go tello.controlResponseListener()
 
 	// say hello to the Tello
@@ -75,14 +91,20 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 
 	// wait up to 3 seconds for the Tello to respond
 	for t := 0; t < 10; t++ {
-		if tello.connected {
+		tello.ctrlMu.RLock()
+		if tello.ctrlConnected {
+			tello.ctrlMu.RUnlock()
 			break
 		}
+		tello.ctrlMu.RUnlock()
 		time.Sleep(333 * time.Millisecond)
 	}
-	if !tello.connected {
+	tello.ctrlMu.RLock()
+	if !tello.ctrlConnected {
+		tello.ctrlMu.RUnlock()
 		return errors.New("Timeout waiting for response to connection request from Tello")
 	}
+	tello.ctrlMu.RUnlock()
 
 	return nil
 }
@@ -133,9 +155,9 @@ func (tello *Tello) VideoDisconnect() {
 
 // GetFlightData returns the current known state of the Tello
 func (tello *Tello) GetFlightData() FlightData {
-	tello.dataMu.RLock()
+	tello.fdMu.RLock()
 	rfd := tello.fd
-	tello.dataMu.RUnlock()
+	tello.fdMu.RUnlock()
 	return rfd
 }
 
@@ -143,28 +165,34 @@ func (tello *Tello) GetFlightData() FlightData {
 // If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored
 // If asAvailable is false then updates are send every periodMs
 // This streamer does not block on the channel, so unconsumed updates are lost
-func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) <-chan FlightData {
-	if tello.streamingData {
-		return nil
+func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) (<-chan FlightData, error) {
+	tello.fdMu.RLock()
+	if tello.fdStreaming {
+		tello.fdMu.RUnlock()
+		return nil, errors.New("Already streaming data from this Tello")
 	}
+	tello.fdMu.RUnlock()
 	fdChan := make(chan FlightData, 2)
 	if asAvailable {
 		log.Fatal("asAvailable FlightData stream not yet implemented") // TODO
 	} else {
 		go func() {
 			for {
-				tello.dataMu.RLock()
+				tello.fdMu.RLock()
 				select {
 				case fdChan <- tello.fd:
 				default:
 				}
-				tello.dataMu.RUnlock()
+				tello.fdMu.RUnlock()
 				time.Sleep(periodMs * time.Millisecond)
 			}
 		}()
 	}
+	tello.fdMu.Lock()
+	tello.fdStreaming = true
+	tello.fdMu.Unlock()
 
-	return fdChan
+	return fdChan, nil
 }
 
 func (tello *Tello) controlResponseListener() {
@@ -175,13 +203,13 @@ func (tello *Tello) controlResponseListener() {
 		n, err := tello.ctrlConn.Read(buff)
 
 		// the initial connect response is different...
-		if tello.connecting && n == 11 {
+		if tello.ctrlConnecting && n == 11 {
 			if bytes.ContainsAny(buff, "conn_ack:") {
 				// TODO handle returned video port?
 				log.Printf("Debug: conn_ack received, buffer len: %d\n", n)
 				tello.ctrlMu.Lock()
-				tello.connecting = false
-				tello.connected = true
+				tello.ctrlConnecting = false
+				tello.ctrlConnected = true
 				tello.ctrlMu.Unlock()
 			} else {
 				log.Printf("Unexpected response to connection request <%s>\n", string(buff))
@@ -206,18 +234,18 @@ func (tello *Tello) controlResponseListener() {
 				case msgFlightStatus:
 				case msgLightStrength:
 					log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
-					tello.dataMu.Lock()
+					tello.fdMu.Lock()
 					tello.fd.LightStrength = uint8(pkt.payload[0])
-					tello.dataMu.Unlock()
+					tello.fdMu.Unlock()
 				case msgLogHeader:
 					log.Printf("Log Header received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 				case msgWifiStrength:
 					log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
-					tello.dataMu.Lock()
+					tello.fdMu.Lock()
 					tello.fd.WifiStrength = uint8(pkt.payload[0])
 					tello.fd.WifiInterference = uint8(pkt.payload[1])
 					log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
-					tello.dataMu.Unlock()
+					tello.fdMu.Unlock()
 				default:
 					log.Printf("Unknown message type from Tello <%d>\n", msgType)
 				}
@@ -237,7 +265,7 @@ func (tello *Tello) sendConnectRequest(videoPort uint16) {
 	msgBuff[9] = byte(videoPort & 0xff)
 	msgBuff[10] = byte(videoPort >> 8)
 	tello.ctrlMu.Lock()
-	tello.connecting = true
+	tello.ctrlConnecting = true
 	tello.ctrlConn.Write(msgBuff)
 	tello.ctrlMu.Unlock()
 }
