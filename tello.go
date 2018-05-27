@@ -44,9 +44,7 @@ type Tello struct {
 	connecting, connected       bool
 	ctrlMu                      sync.Mutex
 	dataMu                      sync.RWMutex
-	wifiStrength                uint8
-	wifiInterference            uint8
-	lightStrength               uint8
+	fd                          FlightData // our private amalgamated store of the latest data
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
@@ -119,6 +117,14 @@ func (tello *Tello) VideoDisconnect() {
 	tello.videoConn.Close()
 }
 
+// GetFlightData returns the current known state of the Tello
+func (tello *Tello) GetFlightData() FlightData {
+	tello.dataMu.RLock()
+	rfd := tello.fd
+	tello.dataMu.RUnlock()
+	return rfd
+}
+
 func (tello *Tello) controlResponseListener() {
 	buff := make([]byte, 4096)
 	var msgType uint16
@@ -159,16 +165,16 @@ func (tello *Tello) controlResponseListener() {
 				case msgLightStrength:
 					log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.dataMu.Lock()
-					tello.lightStrength = uint8(pkt.payload[0])
+					tello.fd.LightStrength = uint8(pkt.payload[0])
 					tello.dataMu.Unlock()
 				case msgLogHeader:
 					log.Printf("Log Header received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 				case msgWifiStrength:
 					log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.dataMu.Lock()
-					tello.wifiStrength = uint8(pkt.payload[0])
-					tello.wifiInterference = uint8(pkt.payload[1])
-					log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.wifiStrength, tello.wifiInterference)
+					tello.fd.WifiStrength = uint8(pkt.payload[0])
+					tello.fd.WifiInterference = uint8(pkt.payload[1])
+					log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
 					tello.dataMu.Unlock()
 				default:
 					log.Printf("Unknown message type from Tello <%d>\n", msgType)

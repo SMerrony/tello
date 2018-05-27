@@ -158,7 +158,7 @@ type FlightData struct {
 	Height                   int16
 	ImuCalibrationState      int8
 	ImuState                 bool
-	LightStrength            int8
+	LightStrength            uint8
 	NorthSpeed               int16
 	OutageRecording          bool
 	PowerState               bool
@@ -166,8 +166,8 @@ type FlightData struct {
 	SmartVideoExitMode       int16
 	TemperatureHeight        bool
 	ThrowFlyTimer            int8
-	WifiDisturb              int8
-	WifiStrength             int8
+	WifiInterference         uint8
+	WifiStrength             uint8
 	WindState                bool
 }
 
