@@ -39,16 +39,20 @@ const (
 	defaultLocalVideoPort   = 8801
 )
 
+const keepAlivePeriodMs = 50
+
 // Tello holds the current state of a connection to a Tello drone
 type Tello struct {
-	ctrlMu                        sync.RWMutex // this mutex protects the control fields
-	ctrlConn, videoConn           *net.UDPConn
-	ctrlStopChan, videoStopChan   chan bool
-	ctrlConnecting, ctrlConnected bool
-	ctrlSeq                       uint16
-	fdMu                          sync.RWMutex // this mutex protects the flight data fields
-	fd                            FlightData   // our private amalgamated store of the latest data
-	fdStreaming                   bool         // are we currently sending FlightData out?
+	ctrlMu                         sync.RWMutex // this mutex protects the control fields
+	ctrlConn, videoConn            *net.UDPConn
+	ctrlStopChan, videoStopChan    chan bool
+	ctrlConnecting, ctrlConnected  bool
+	ctrlSeq                        uint16
+	ctrlRx, ctrlRy, ctrlLx, ctrlLy float64
+	ctrlThrottle                   float64
+	fdMu                           sync.RWMutex // this mutex protects the flight data fields
+	fd                             FlightData   // our private amalgamated store of the latest data
+	fdStreaming                    bool         // are we currently sending FlightData out?
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
@@ -107,6 +111,9 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	}
 	tello.ctrlMu.RUnlock()
 
+	// start the keepalive transmitter
+	go tello.keepAlive()
+
 	return nil
 }
 
@@ -121,6 +128,7 @@ func (tello *Tello) ControlDisconnect() {
 	// TODO should we tell the Tello we are disconnecting?
 	tello.ctrlStopChan <- true
 	tello.ctrlConn.Close()
+	tello.ctrlConnected = false
 }
 
 // VideoConnect attempts to connect to a Tello video channel at the provided adrr and starts a listener
@@ -269,6 +277,67 @@ func (tello *Tello) sendConnectRequest(videoPort uint16) {
 	tello.ctrlConnecting = true
 	tello.ctrlConn.Write(msgBuff)
 	tello.ctrlMu.Unlock()
+}
+
+func (tello *Tello) keepAlive() {
+	for {
+		if tello.ctrlConnected {
+			tello.sendStickUpdate()
+		} else {
+			return // we've disconnected
+		}
+		time.Sleep(keepAlivePeriodMs * time.Millisecond)
+	}
+}
+
+func jsFloatToTello(fv float64) uint64 {
+	return uint64(660*fv + 1024)
+}
+
+func (tello *Tello) sendStickUpdate() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptData2
+	pkt.messageID = msgSetStick
+	pkt.sequence = 0
+	pkt.payload = make([]byte, 11)
+
+	// This packing of the joystick data is just vile...
+	packedAxes := jsFloatToTello(tello.ctrlRx)
+	packedAxes |= jsFloatToTello(tello.ctrlRy) << 11
+	packedAxes |= jsFloatToTello(tello.ctrlLy) << 22
+	packedAxes |= jsFloatToTello(tello.ctrlLx) << 33
+	if tello.ctrlThrottle > 0.1 {
+		packedAxes |= 0x7ff << 44
+	} else {
+		packedAxes |= jsFloatToTello(tello.ctrlThrottle) << 44
+	}
+	pkt.payload[0] = byte(packedAxes)
+	pkt.payload[1] = byte(packedAxes >> 8)
+	pkt.payload[2] = byte(packedAxes >> 16)
+	pkt.payload[3] = byte(packedAxes >> 24)
+	pkt.payload[4] = byte(packedAxes >> 32)
+	pkt.payload[5] = byte(packedAxes >> 40)
+
+	now := time.Now()
+	pkt.payload[6] = byte(now.Hour())
+	pkt.payload[7] = byte(now.Minute())
+	pkt.payload[8] = byte(now.Second())
+	ms := now.UnixNano() / 1000000
+	pkt.payload[9] = byte(ms & 0xff)
+	pkt.payload[10] = byte(ms >> 8)
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
+	// send the command packet
+	tello.ctrlConn.Write(buff)
 }
 
 // TakeOff sends a normal takeoff request to the Tello

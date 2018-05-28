@@ -86,7 +86,7 @@ func TestTakeoffLand(t *testing.T) {
 
 	drone.TakeOff()
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	drone.Land()
 

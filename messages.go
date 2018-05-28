@@ -190,8 +190,10 @@ func bufferToPacket(buff []byte) (pkt packet) {
 	pkt.messageID = (uint16(buff[6]) << 8) | uint16(buff[5])
 	pkt.sequence = (uint16(buff[8]) << 8) | uint16(buff[7])
 	payloadSize := pkt.size13 - 11
-	pkt.payload = make([]byte, payloadSize)
-	copy(pkt.payload, buff[9:9+payloadSize-1])
+	if payloadSize > 0 {
+		pkt.payload = make([]byte, payloadSize)
+		copy(pkt.payload, buff[9:9+payloadSize])
+	}
 	pkt.crc16 = uint16(buff[pkt.size13-1])<<8 + uint16(buff[pkt.size13-2])
 	return pkt
 }
