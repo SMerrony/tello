@@ -22,7 +22,7 @@
 package tello
 
 import (
-	"fmt"
+	"bytes"
 	"testing"
 )
 
@@ -40,6 +40,9 @@ func TestPacketToBuffer(t *testing.T) {
 
 	b := packetToBuffer(p)
 
-	fmt.Printf("% x ", b)
+	correct := []byte{0xcc, 0x58, 0, 0x7c, 0x68, 0x54, 0, 0, 0, 0xb2, 0x89}
 
+	if !bytes.Equal(correct, b) {
+		t.Error("Buffer encoding incorrect")
+	}
 }

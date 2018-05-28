@@ -206,7 +206,6 @@ func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) (
 
 func (tello *Tello) controlResponseListener() {
 	buff := make([]byte, 4096)
-	var msgType uint16
 
 	for {
 		n, err := tello.ctrlConn.Read(buff)
@@ -242,21 +241,22 @@ func (tello *Tello) controlResponseListener() {
 				switch pkt.messageID {
 				case msgFlightStatus:
 				case msgLightStrength:
-					log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
+					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.LightStrength = uint8(pkt.payload[0])
 					tello.fdMu.Unlock()
 				case msgLogHeader:
 					log.Printf("Log Header received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 				case msgWifiStrength:
-					log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
+					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.WifiStrength = uint8(pkt.payload[0])
 					tello.fd.WifiInterference = uint8(pkt.payload[1])
 					log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
 					tello.fdMu.Unlock()
 				default:
-					log.Printf("Unknown message type from Tello <%d>\n", msgType)
+					log.Printf("Unknown message from Tello - ID: <%d>, Size %d, Type: %d\n",
+						pkt.messageID, pkt.size13, pkt.packetType)
 				}
 			}
 		}
