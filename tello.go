@@ -51,6 +51,7 @@ type Tello struct {
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy float64
 	ctrlThrottle                   float64
 	stickChan                      chan StickMessage // this will receive stick updates from the user
+	stickListening                 bool              // are we currently listening on stickChan?
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
 	fd                             FlightData        // our private amalgamated store of the latest data
 	fdStreaming                    bool              // are we currently sending FlightData out?
@@ -58,32 +59,32 @@ type Tello struct {
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
 // It then starts listening for responses on the control channel and waits for the Tello to respond
-func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPort int) (stkChan <-chan StickMessage, err error) {
+func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
 	// first check that we are not already connected or connecting
 	tello.ctrlMu.RLock()
 	if tello.ctrlConnected {
 		tello.ctrlMu.RUnlock()
-		return nil, errors.New("Tello already connected")
+		return errors.New("Tello already connected")
 	}
 	if tello.ctrlConnecting {
 		tello.ctrlMu.RUnlock()
-		return nil, errors.New("Tello connection attempt already in progress")
+		return errors.New("Tello connection attempt already in progress")
 	}
 	tello.ctrlMu.RUnlock()
 
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUDPPort))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tello.ctrlMu.Lock()
 	tello.ctrlConn, err = net.DialUDP("udp", localAddr, droneAddr)
 	tello.ctrlMu.Unlock()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// start the control listener Goroutine
@@ -108,23 +109,19 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	tello.ctrlMu.RLock()
 	if !tello.ctrlConnected {
 		tello.ctrlMu.RUnlock()
-		return nil, errors.New("Timeout waiting for response to connection request from Tello")
+		return errors.New("Timeout waiting for response to connection request from Tello")
 	}
 	tello.ctrlMu.RUnlock()
 
 	// start the keepalive transmitter
 	go tello.keepAlive()
 
-	// start the stick listener
-	tello.stickChan = make(chan StickMessage, 10)
-	go tello.stickListener()
-
-	return tello.stickChan, nil
+	return nil
 }
 
 // ControlConnectDefault attempts to connect to a Tello on the default network addresses.
 // It then starts listening for responses on the control channel and waits for the Tello to respond
-func (tello *Tello) ControlConnectDefault() (stkChan <-chan StickMessage, err error) {
+func (tello *Tello) ControlConnectDefault() (err error) {
 	return tello.ControlConnect(defaultTelloAddr, defaultTelloControlPort, defaultLocalControlPort)
 }
 
@@ -298,15 +295,34 @@ func (tello *Tello) keepAlive() {
 func (tello *Tello) stickListener() {
 	for {
 		sm := <-tello.stickChan
-		tello.ctrlMu.Lock()
-		tello.ctrlLx = sm.Lx
-		tello.ctrlLy = sm.Ly
-		tello.ctrlRx = sm.Rx
-		tello.ctrlRy = sm.Ry
-		tello.ctrlThrottle = sm.Throttle
-		tello.ctrlMu.Unlock()
+		tello.UpdateSticks(sm)
 	}
 }
+
+// StartStickListener starts a Goroutine which listens for StickMessages on a channel
+// and applies them to the Tello
+func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) {
+	if tello.stickListening {
+		return nil, errors.New("Cannot start another StickListener, already one running")
+	}
+	tello.stickListening = true
+	// start the stick listener
+	tello.stickChan = make(chan StickMessage, 10)
+	go tello.stickListener()
+	return tello.stickChan, nil
+}
+
+// UpdateSticks does a one-off update of the stick values which are then sent to the Tello
+func (tello *Tello) UpdateSticks(sm StickMessage) {
+	tello.ctrlMu.Lock()
+	tello.ctrlLx = sm.Lx
+	tello.ctrlLy = sm.Ly
+	tello.ctrlRx = sm.Rx
+	tello.ctrlRy = sm.Ry
+	tello.ctrlThrottle = sm.Throttle
+	tello.ctrlMu.Unlock()
+}
+
 func jsFloatToTello(fv float64) uint64 {
 	return uint64(660*fv + 1024)
 }
