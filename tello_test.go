@@ -33,7 +33,7 @@ func TestControlConnectDisconnect(t *testing.T) {
 
 	drone := new(Tello)
 
-	err := drone.ControlConnectDefault()
+	_, err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
 	}
@@ -55,7 +55,7 @@ func TestControlConnectDisconnect(t *testing.T) {
 func TestStreamingData(t *testing.T) {
 	drone := new(Tello)
 
-	err := drone.ControlConnectDefault()
+	_, err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
 	}
@@ -78,7 +78,7 @@ func TestStreamingData(t *testing.T) {
 func TestTakeoffLand(t *testing.T) {
 	drone := new(Tello)
 
-	err := drone.ControlConnectDefault()
+	_, err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
 	}

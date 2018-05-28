@@ -23,6 +23,7 @@ package tello
 
 const msgHdr = 0xcc // 204
 
+// packet is our representation of the messages passed to/from the Tello
 type packet struct {
 	header        byte
 	size13        uint16
@@ -173,10 +174,17 @@ type FlightData struct {
 	WindState                bool
 }
 
-func createBufferForMsgType(mType int) (buff []byte) {
-
-	return buff
+// StickMessage holds the values of a joystick update
+type StickMessage struct {
+	Rx, Ry, Lx, Ly, Throttle float64
 }
+
+// func createBufferForMsgType(mType int) (buff []byte) {
+
+// 	return buff
+// }
+
+// utility funcs for message handling
 
 // bufferToPacket takes a raw buffer of bytes and populates our packet struct
 func bufferToPacket(buff []byte) (pkt packet) {
