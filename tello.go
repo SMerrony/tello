@@ -133,6 +133,14 @@ func (tello *Tello) ControlDisconnect() {
 	tello.ctrlConnected = false
 }
 
+// ControlConnected returns true if we are currently connected
+func (tello *Tello) ControlConnected() (c bool) {
+	tello.ctrlMu.RLock()
+	c = tello.ctrlConnected
+	tello.ctrlMu.RUnlock()
+	return c
+}
+
 // VideoConnect attempts to connect to a Tello video channel at the provided adrr and starts a listener
 func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
