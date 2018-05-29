@@ -1,4 +1,4 @@
-// network.go
+// tello.go
 
 // Copyright (C) 2018  Steve Merrony
 
@@ -257,12 +257,15 @@ func (tello *Tello) controlResponseListener() {
 					tello.fdMu.Unlock()
 				case msgLogHeader:
 					log.Printf("Log Header received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
+				case msgSetDateTime:
+					//log.Println("DateTime request received from Tello")
+					tello.sendDateTime()
 				case msgWifiStrength:
 					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.WifiStrength = uint8(pkt.payload[0])
 					tello.fd.WifiInterference = uint8(pkt.payload[1])
-					log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
+					//log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
 					tello.fdMu.Unlock()
 				default:
 					log.Printf("Unknown message from Tello - ID: <%d>, Size %d, Type: %d\n",
@@ -287,6 +290,47 @@ func (tello *Tello) sendConnectRequest(videoPort uint16) {
 	tello.ctrlConnecting = true
 	tello.ctrlConn.Write(msgBuff)
 	tello.ctrlMu.Unlock()
+}
+
+func (tello *Tello) sendDateTime() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptData1
+	pkt.messageID = msgSetDateTime
+	tello.ctrlSeq++
+	pkt.sequence = tello.ctrlSeq
+	pkt.payload = make([]byte, 15)
+	pkt.payload[0] = 0
+
+	now := time.Now()
+	pkt.payload[1] = byte(now.Year())
+	pkt.payload[2] = byte(now.Year() >> 8)
+	pkt.payload[3] = byte(int(now.Month()))
+	pkt.payload[4] = byte(int(now.Month()) >> 8)
+	pkt.payload[5] = byte(now.Day())
+	pkt.payload[6] = byte(now.Day() >> 8)
+	pkt.payload[7] = byte(now.Hour())
+	pkt.payload[8] = byte(now.Hour() >> 8)
+	pkt.payload[9] = byte(now.Minute())
+	pkt.payload[10] = byte(now.Minute() >> 8)
+	pkt.payload[11] = byte(now.Second())
+	pkt.payload[12] = byte(now.Second() >> 8)
+	ms := now.UnixNano() / 1000000
+	pkt.payload[13] = byte(ms)
+	pkt.payload[14] = byte(ms >> 8)
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
+	// send the command packet
+	tello.ctrlConn.Write(buff)
+	//log.Println("Sent DateTime Response")
 }
 
 func (tello *Tello) keepAlive() {
@@ -385,61 +429,4 @@ func (tello *Tello) sendStickUpdate() {
 
 	// send the command packet
 	tello.ctrlConn.Write(buff)
-}
-
-// TakeOff sends a normal takeoff request to the Tello
-func (tello *Tello) TakeOff() {
-	tello.ctrlMu.Lock()
-	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
-
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgDoTakeoff
-	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
-}
-
-// Land sends a normal Land request to the Tello
-func (tello *Tello) Land() {
-	tello.ctrlMu.Lock()
-	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
-
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgDoLand
-	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-	pkt.payload = make([]byte, 1)
-	pkt.payload[0] = 0
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
-}
-
-// Hover simply sets the sticks to zero - useful as a panic action!
-func (tello *Tello) Hover() {
-	tello.ctrlMu.Lock()
-	tello.ctrlLx = 0
-	tello.ctrlLy = 0
-	tello.ctrlRx = 0
-	tello.ctrlRy = 0
-	tello.ctrlThrottle = 0
-	tello.ctrlMu.Unlock()
 }
