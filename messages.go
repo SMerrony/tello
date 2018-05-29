@@ -145,13 +145,11 @@ type FlightData struct {
 	DroneFlyTimeLeft         int16
 	DroneHover               bool
 	EmOpen                   bool
-	EmSky                    bool
-	EmGround                 bool
 	EastSpeed                int16
 	ElectricalMachineryState int16
 	FactoryMode              bool
+	Flying                   bool
 	FlyMode                  int8
-	FlySpeed                 int16
 	FlyTime                  int16
 	FrontIn                  bool
 	FrontLSC                 bool
@@ -163,12 +161,14 @@ type FlightData struct {
 	ImuState                 bool
 	LightStrength            uint8
 	NorthSpeed               int16
+	OnGround                 bool
 	OutageRecording          bool
 	PowerState               bool
 	PressureState            bool
 	SmartVideoExitMode       int16
 	TemperatureHeight        bool
 	ThrowFlyTimer            int8
+	VerticalSpeed            int16
 	WifiInterference         uint8
 	WifiStrength             uint8
 	WindState                bool
@@ -238,4 +238,20 @@ func packetToBuffer(pkt packet) (buff []byte) {
 	buff[10+payloadSize] = byte(crc16 >> 8)
 
 	return buff
+}
+
+func payloadToFlightData(pl []byte) (fd FlightData) {
+	fd.Height = int16(pl[0]) + int16(pl[1])<<8
+	fd.NorthSpeed = int16(uint16(pl[2]) | uint16(pl[3])<<8)
+	fd.EastSpeed = int16(pl[4]) | int16(pl[5])<<8
+	fd.VerticalSpeed = int16(pl[6]) | int16(pl[7])<<8
+	fd.FlyTime = int16(pl[8]) | int16(pl[9])<<8
+	// TODO next byte (10) holds flags
+	fd.ImuCalibrationState = int8(pl[11])
+	fd.BatteryPercentage = int8(pl[12])
+	fd.DroneFlyTimeLeft = int16(pl[13]) + int16(pl[14])<<8
+	fd.DroneBatteryLeft = int16(pl[15]) + int16(pl[16])<<8
+	fd.Flying = (pl[17] & 1) == 1
+	fd.OnGround = (pl[17] >> 1 & 1) == 1
+	return fd
 }

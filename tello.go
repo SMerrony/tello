@@ -250,6 +250,23 @@ func (tello *Tello) controlResponseListener() {
 				pkt := bufferToPacket(buff)
 				switch pkt.messageID {
 				case msgFlightStatus:
+					tmpFd := payloadToFlightData(pkt.payload)
+					tello.fdMu.Lock()
+					// not all fields are sent...
+					tello.fd.Height = tmpFd.Height
+					tello.fd.NorthSpeed = tmpFd.NorthSpeed
+					tello.fd.EastSpeed = tmpFd.EastSpeed
+					tello.fd.VerticalSpeed = tmpFd.VerticalSpeed
+					tello.fd.FlyTime = tmpFd.FlyTime
+					// TODO flags
+					tello.fd.ImuCalibrationState = tmpFd.ImuCalibrationState
+					tello.fd.BatteryPercentage = tmpFd.BatteryPercentage
+					tello.fd.DroneFlyTimeLeft = tmpFd.DroneFlyTimeLeft
+					tello.fd.DroneBatteryLeft = tmpFd.DroneBatteryLeft
+					tello.fd.Flying = tmpFd.Flying
+					tello.fd.OnGround = tmpFd.OnGround
+
+					tello.fdMu.Unlock()
 				case msgLightStrength:
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
