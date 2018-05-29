@@ -27,6 +27,36 @@ import (
 	"time"
 )
 
+func TestJsFloatToTello(t *testing.T) {
+	r := jsFloatToTello(0)
+	if r != 1024 {
+		t.Errorf("Expected 1024, got %d", r)
+	}
+	r = jsFloatToTello(1.0)
+	if r != 1388 {
+		t.Errorf("Expected 1388, got %d", r)
+	}
+	r = jsFloatToTello(-1.0)
+	if r != 660 {
+		t.Errorf("Expected 660, got %d", r)
+	}
+}
+
+func TestJsInt16ToTello(t *testing.T) {
+	r := jsInt16ToTello(0)
+	if r != 1024 {
+		t.Errorf("Expected 1024, got %d", r)
+	}
+	r = jsInt16ToTello(32767)
+	if r != 1388 {
+		t.Errorf("Expected 1388, got %d", r)
+	}
+	r = jsInt16ToTello(-32768)
+	if r != 660 {
+		t.Errorf("Expected 660, got %d", r)
+	}
+}
+
 // use go test -count=1 to bypass test caching
 
 func TestControlConnectDisconnect(t *testing.T) {

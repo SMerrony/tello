@@ -176,7 +176,7 @@ type FlightData struct {
 
 // StickMessage holds the values of a joystick update
 type StickMessage struct {
-	Rx, Ry, Lx, Ly, Throttle float64
+	Rx, Ry, Lx, Ly, Throttle int16
 }
 
 // func createBufferForMsgType(mType int) (buff []byte) {

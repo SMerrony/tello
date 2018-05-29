@@ -48,8 +48,8 @@ type Tello struct {
 	ctrlStopChan, videoStopChan    chan bool
 	ctrlConnecting, ctrlConnected  bool
 	ctrlSeq                        uint16
-	ctrlRx, ctrlRy, ctrlLx, ctrlLy float64
-	ctrlThrottle                   float64
+	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
+	ctrlThrottle                   int16
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
@@ -332,7 +332,12 @@ func (tello *Tello) UpdateSticks(sm StickMessage) {
 }
 
 func jsFloatToTello(fv float64) uint64 {
-	return uint64(660*fv + 1024)
+	return uint64(364*fv + 1024)
+}
+
+func jsInt16ToTello(sv int16) uint64 {
+	// sv is in range -32768 to 32767, we need 660 to 1388 where 0 => 1024
+	return uint64((sv / 90) + 1024)
 }
 
 func (tello *Tello) sendStickUpdate() {
@@ -350,14 +355,15 @@ func (tello *Tello) sendStickUpdate() {
 	pkt.payload = make([]byte, 11)
 
 	// This packing of the joystick data is just vile...
-	packedAxes := jsFloatToTello(tello.ctrlRx)
-	packedAxes |= jsFloatToTello(tello.ctrlRy) << 11
-	packedAxes |= jsFloatToTello(tello.ctrlLy) << 22
-	packedAxes |= jsFloatToTello(tello.ctrlLx) << 33
-	if tello.ctrlThrottle > 0.1 {
+	var packedAxes uint64
+	packedAxes = jsInt16ToTello(tello.ctrlRx)
+	packedAxes |= jsInt16ToTello(tello.ctrlRy) << 11
+	packedAxes |= jsInt16ToTello(tello.ctrlLy) << 22
+	packedAxes |= jsInt16ToTello(tello.ctrlLx) << 33
+	if tello.ctrlThrottle > 1090 { // WHY???
 		packedAxes |= 0x7ff << 44
 	} else {
-		packedAxes |= jsFloatToTello(tello.ctrlThrottle) << 44
+		packedAxes |= jsInt16ToTello(tello.ctrlThrottle) << 44
 	}
 	pkt.payload[0] = byte(packedAxes)
 	pkt.payload[1] = byte(packedAxes >> 8)
