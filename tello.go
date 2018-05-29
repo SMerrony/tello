@@ -249,6 +249,8 @@ func (tello *Tello) controlResponseListener() {
 			} else {
 				pkt := bufferToPacket(buff)
 				switch pkt.messageID {
+				case msgDoLand: // ignore for now
+				case msgDoTakeoff: // ignore for now
 				case msgFlightStatus:
 					tmpFd := payloadToFlightData(pkt.payload)
 					tello.fdMu.Lock()
@@ -265,6 +267,20 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.DroneBatteryLeft = tmpFd.DroneBatteryLeft
 					tello.fd.Flying = tmpFd.Flying
 					tello.fd.OnGround = tmpFd.OnGround
+					tello.fd.EmOpen = tmpFd.EmOpen
+					tello.fd.DroneHover = tmpFd.DroneHover
+					tello.fd.OutageRecording = tmpFd.OutageRecording
+					tello.fd.BatteryLow = tmpFd.BatteryLow
+					tello.fd.BatteryLower = tmpFd.BatteryLower
+					tello.fd.FactoryMode = tmpFd.FactoryMode
+					tello.fd.FlyMode = tmpFd.FlyMode
+					tello.fd.ThrowFlyTimer = tmpFd.ThrowFlyTimer
+					tello.fd.CameraState = tmpFd.CameraState
+					tello.fd.ElectricalMachineryState = tmpFd.ElectricalMachineryState
+					tello.fd.FrontIn = tmpFd.FrontIn
+					tello.fd.FrontOut = tmpFd.FrontOut
+					tello.fd.FrontLSC = tmpFd.FrontLSC
+					tello.fd.OverTemp = tmpFd.OverTemp
 
 					tello.fdMu.Unlock()
 				case msgLightStrength:
@@ -277,6 +293,7 @@ func (tello *Tello) controlResponseListener() {
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()
+
 				case msgWifiStrength:
 					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
