@@ -260,7 +260,13 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.EastSpeed = tmpFd.EastSpeed
 					tello.fd.VerticalSpeed = tmpFd.VerticalSpeed
 					tello.fd.FlyTime = tmpFd.FlyTime
-					// TODO flags
+					tello.fd.ImuState = tmpFd.ImuState
+					tello.fd.PressureState = tmpFd.PressureState
+					tello.fd.DownVisualState = tmpFd.DownVisualState
+					tello.fd.PowerState = tmpFd.PowerState
+					tello.fd.BatteryState = tmpFd.BatteryState
+					tello.fd.GravityState = tmpFd.GravityState
+					tello.fd.WindState = tmpFd.WindState
 					tello.fd.ImuCalibrationState = tmpFd.ImuCalibrationState
 					tello.fd.BatteryPercentage = tmpFd.BatteryPercentage
 					tello.fd.DroneFlyTimeLeft = tmpFd.DroneFlyTimeLeft

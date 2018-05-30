@@ -246,11 +246,21 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	fd.EastSpeed = int16(pl[4]) | int16(pl[5])<<8
 	fd.VerticalSpeed = int16(pl[6]) | int16(pl[7])<<8
 	fd.FlyTime = int16(pl[8]) | int16(pl[9])<<8
-	// TODO next byte (10) holds flags
+
+	fd.ImuState = (pl[10] & 1) == 1
+	fd.PressureState = (pl[10] >> 1 & 1) == 1
+	fd.DownVisualState = (pl[10] >> 2 & 1) == 1
+	fd.PowerState = (pl[10] >> 3 & 1) == 1
+	fd.BatteryState = (pl[10] >> 4 & 1) == 1
+	fd.GravityState = (pl[10] >> 5 & 1) == 1
+	// what is bit 6?
+	fd.WindState = (pl[10] >> 7 & 1) == 1
+
 	fd.ImuCalibrationState = int8(pl[11])
 	fd.BatteryPercentage = int8(pl[12])
 	fd.DroneFlyTimeLeft = int16(pl[13]) + int16(pl[14])<<8
 	fd.DroneBatteryLeft = int16(pl[15]) + int16(pl[16])<<8
+
 	fd.Flying = (pl[17] & 1) == 1
 	fd.OnGround = (pl[17] >> 1 & 1) == 1
 	fd.EmOpen = (pl[17] >> 2 & 1) == 1
@@ -259,10 +269,12 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	fd.BatteryLow = (pl[17] >> 5 & 1) == 1
 	fd.BatteryLower = (pl[17] >> 6 & 1) == 1
 	fd.FactoryMode = (pl[17] >> 7 & 1) == 1
+
 	fd.FlyMode = uint8(pl[18])
 	fd.ThrowFlyTimer = int8(pl[19])
 	fd.CameraState = uint8(pl[20])
 	fd.ElectricalMachineryState = uint8(pl[21])
+
 	fd.FrontIn = (pl[22] & 1) == 1
 	fd.FrontOut = (pl[22] >> 1 & 1) == 1
 	fd.FrontLSC = (pl[22] >> 2 & 1) == 1
