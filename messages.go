@@ -103,34 +103,43 @@ const (
 	msgGetAttitude       = 0x1059 // 4185
 )
 
+// FlipType represents a flip direction
+type FlipType int
+
 // Flip types
 const (
-	flipForward = iota
-	flipLeft
-	flipBackward
-	flipRight
-	flipForwardLeft
-	flipBackwardLeft
-	flipBackwardRight
-	flipForwardRight
+	FlipForward FlipType = iota
+	FlipLeft
+	FlipBackward
+	FlipRight
+	FlipForwardLeft
+	FlipBackwardLeft
+	FlipBackwardRight
+	FlipForwardRight
 )
+
+// SvCmd is Smart Video command
+type SvCmd int
 
 // Smart Video messages
 const (
-	svStop   = 0
-	sv360    = 1
-	svCircle = 2
-	svUpOut  = 3
+	SvStop SvCmd = iota
+	Sv360
+	SvCircle
+	SvUpOut
 )
+
+// VBR is a Video Bit Rate, the int value is meaningless
+type VBR int
 
 // video bit rate (mbps)
 const (
-	vbrAuto = iota
-	vbr1M
-	vbr1M5
-	vbr2M
-	vbr3M
-	vbr4M
+	VbrAuto VBR = iota
+	Vbr1M
+	Vbr1M5
+	Vbr2M
+	Vbr3M
+	Vbr4M
 )
 
 // FlightData payload from the Tello

@@ -35,8 +35,6 @@ const (
 	defaultTelloAddr        = "192.168.10.1"
 	defaultTelloControlPort = 8889
 	defaultLocalControlPort = 8800
-	defaultTelloVideoPort   = 6038
-	defaultLocalVideoPort   = 8801
 )
 
 const keepAlivePeriodMs = 50
@@ -50,6 +48,7 @@ type Tello struct {
 	ctrlSeq                        uint16
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
 	ctrlThrottle                   int16
+	VideoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
@@ -139,37 +138,6 @@ func (tello *Tello) ControlConnected() (c bool) {
 	c = tello.ctrlConnected
 	tello.ctrlMu.RUnlock()
 	return c
-}
-
-// VideoConnect attempts to connect to a Tello video channel at the provided adrr and starts a listener
-func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
-	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
-	if err != nil {
-		return err
-	}
-	// localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUDPPort))
-	// if err != nil {
-	// 	return err
-	// }
-	tello.videoConn, err = net.ListenUDP("udp", droneAddr)
-	if err != nil {
-		return err
-	}
-	tello.videoStopChan = make(chan bool, 2)
-	go tello.videoResponseListener()
-	return nil
-}
-
-// VideoConnectDefault attempts to connect to a Tello video channel using default addresses, then starts a listener
-func (tello *Tello) VideoConnectDefault() (err error) {
-	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort, defaultLocalVideoPort)
-}
-
-// VideoDisconnect closes the connecttion to the video channel
-func (tello *Tello) VideoDisconnect() {
-	// TODO Should we tell the Tello we are stopping video listening?
-	tello.videoStopChan <- true
-	tello.videoConn.Close()
 }
 
 // GetFlightData returns the current known state of the Tello
@@ -315,10 +283,6 @@ func (tello *Tello) controlResponseListener() {
 		}
 
 	}
-}
-
-func (tello *Tello) videoResponseListener() {
-
 }
 
 func (tello *Tello) sendConnectRequest(videoPort uint16) {
