@@ -45,8 +45,29 @@ func (tello *Tello) TakeOff() {
 	tello.ctrlConn.Write(buff)
 }
 
-// Land sends a normal Land request to the Tello
-func (tello *Tello) Land() {
+// ThrowTakeOff initiates a 'throw and go' launch
+func (tello *Tello) ThrowTakeOff() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptGet
+	pkt.messageID = msgDoThrowTakeoff
+	tello.ctrlSeq++
+	pkt.sequence = tello.ctrlSeq
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
+	// send the command packet
+	tello.ctrlConn.Write(buff)
+}
+
+func (tello *Tello) landit(palm bool) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 	// create the command packet
@@ -60,7 +81,51 @@ func (tello *Tello) Land() {
 	tello.ctrlSeq++
 	pkt.sequence = tello.ctrlSeq
 	pkt.payload = make([]byte, 1)
-	pkt.payload[0] = 0
+	if palm {
+		pkt.payload[0] = 1
+	} else {
+		pkt.payload[0] = 0
+	}
+
+	// pack the packet into raw format and calculate CRCs etc.
+	buff := packetToBuffer(pkt)
+
+	// send the command packet
+	tello.ctrlConn.Write(buff)
+}
+
+// Land sends a normal Land request to the Tello
+func (tello *Tello) Land() {
+	tello.landit(false)
+}
+
+// PalmLand initiates a Palm Landing
+func (tello *Tello) PalmLand() {
+	tello.landit(true)
+}
+
+// Bounce toggles the bouncing mode of the Tello
+func (tello *Tello) Bounce() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+	// create the command packet
+	var pkt packet
+
+	// populate the command packet fields we need
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = ptSet
+	pkt.messageID = msgDoBounce
+	tello.ctrlSeq++
+	pkt.sequence = tello.ctrlSeq
+	pkt.payload = make([]byte, 1)
+	if tello.ctrlBouncing {
+		pkt.payload[0] = 0x31
+		tello.ctrlBouncing = false
+	} else {
+		pkt.payload[0] = 0x30
+		tello.ctrlBouncing = true
+	}
 
 	// pack the packet into raw format and calculate CRCs etc.
 	buff := packetToBuffer(pkt)

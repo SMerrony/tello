@@ -48,6 +48,7 @@ type Tello struct {
 	ctrlSeq                        uint16
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
 	ctrlThrottle                   int16
+	ctrlBouncing                   bool // do we think we are bouncing?
 	VideoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
@@ -408,11 +409,8 @@ func (tello *Tello) sendStickUpdate() {
 	packedAxes |= jsInt16ToTello(tello.ctrlRy) << 11
 	packedAxes |= jsInt16ToTello(tello.ctrlLy) << 22
 	packedAxes |= jsInt16ToTello(tello.ctrlLx) << 33
-	if tello.ctrlThrottle > 1090 { // WHY???
-		packedAxes |= 0x7ff << 44
-	} else {
-		packedAxes |= jsInt16ToTello(tello.ctrlThrottle) << 44
-	}
+	packedAxes |= jsInt16ToTello(tello.ctrlThrottle) << 44
+
 	pkt.payload[0] = byte(packedAxes)
 	pkt.payload[1] = byte(packedAxes >> 8)
 	pkt.payload[2] = byte(packedAxes >> 16)

@@ -114,11 +114,8 @@ func (tello *Tello) StartVideo() {
 	pkt.packetType = ptData2
 	pkt.messageID = msgGetVideoSPSPPS
 	pkt.sequence = 0 // always zero
-	// pkt.payload = make([]byte, 1)
-	// pkt.payload[0] = 0
 	// pack the packet into raw format and calculate CRCs etc.
 	buff := packetToBuffer(pkt)
 	// send the command packet
 	tello.ctrlConn.Write(buff)
-	log.Printf("Start Video command sent to drone % x\n", buff)
 }
