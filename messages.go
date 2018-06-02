@@ -215,6 +215,19 @@ func bufferToPacket(buff []byte) (pkt packet) {
 	return pkt
 }
 
+// newPacket returns a packet with some fields populated
+func newPacket(pt uint8, cmd uint16, seq uint16, payloadSize int) (pkt packet) {
+	pkt.header = msgHdr
+	pkt.toDrone = true
+	pkt.packetType = pt
+	pkt.messageID = cmd
+	pkt.sequence = seq
+	if payloadSize > 0 {
+		pkt.payload = make([]byte, payloadSize)
+	}
+	return pkt
+}
+
 // pack the packet into raw buffer format and calculate CRCs etc.
 func packetToBuffer(pkt packet) (buff []byte) {
 	// create a buffer of the right size

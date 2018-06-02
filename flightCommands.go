@@ -27,98 +27,51 @@ package tello
 func (tello *Tello) TakeOff() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
 
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgDoTakeoff
 	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
+	pkt := newPacket(ptSet, msgDoTakeoff, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
 // ThrowTakeOff initiates a 'throw and go' launch
 func (tello *Tello) ThrowTakeOff() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
 
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptGet
-	pkt.messageID = msgDoThrowTakeoff
 	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
-}
-
-func (tello *Tello) landit(palm bool) {
-	tello.ctrlMu.Lock()
-	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
-
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgDoLand
-	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-	pkt.payload = make([]byte, 1)
-	if palm {
-		pkt.payload[0] = 1
-	} else {
-		pkt.payload[0] = 0
-	}
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
+	pkt := newPacket(ptGet, msgDoThrowTakeoff, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
 // Land sends a normal Land request to the Tello
 func (tello *Tello) Land() {
-	tello.landit(false)
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgDoLand, tello.ctrlSeq, 1)
+	pkt.payload[0] = 0
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
 // PalmLand initiates a Palm Landing
 func (tello *Tello) PalmLand() {
-	tello.landit(true)
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgDoLand, tello.ctrlSeq, 1)
+	pkt.payload[0] = 1
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
 // Bounce toggles the bouncing mode of the Tello
 func (tello *Tello) Bounce() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
-	// create the command packet
-	var pkt packet
 
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgDoBounce
 	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-	pkt.payload = make([]byte, 1)
+	pkt := newPacket(ptSet, msgDoBounce, tello.ctrlSeq, 1)
 	if tello.ctrlBouncing {
 		pkt.payload[0] = 0x31
 		tello.ctrlBouncing = false
@@ -126,13 +79,11 @@ func (tello *Tello) Bounce() {
 		pkt.payload[0] = 0x30
 		tello.ctrlBouncing = true
 	}
-
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
+
+// *** The following are 'macro' commands which are here purely
+// *** to make the Tello easier to use in some circumstances.
 
 // Hover simply sets the sticks to zero - useful as a panic action!
 func (tello *Tello) Hover() {
@@ -231,3 +182,5 @@ func (tello *Tello) TurnLeft(pct int) {
 func (tello *Tello) CounterClockwise(pct int) {
 	tello.Anticlockwise(pct)
 }
+
+// *** End of 'macro' commands ***
