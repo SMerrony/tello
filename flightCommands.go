@@ -182,7 +182,7 @@ func (tello *Tello) CounterClockwise(pct int) {
 	tello.Anticlockwise(pct)
 }
 
-// SetSportsMode sets the sports mode of flight
+// SetSportsMode sets the sports mode of flight to the given value
 func (tello *Tello) SetSportsMode(sports bool) {
 	tello.ctrlMu.Lock()
 	tello.ctrlSportsMode = sports
@@ -194,7 +194,7 @@ func (tello *Tello) SetFastMode() {
 	tello.SetSportsMode(true)
 }
 
-// SetSlowMode sets the 'fast' or 'normal' mode of flight
+// SetSlowMode sets the 'slow' or 'normal' mode of flight
 func (tello *Tello) SetSlowMode() {
 	tello.SetSportsMode(false)
 }
