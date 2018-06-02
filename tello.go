@@ -47,8 +47,8 @@ type Tello struct {
 	ctrlConnecting, ctrlConnected  bool
 	ctrlSeq                        uint16
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
-	ctrlThrottle                   int16
-	ctrlBouncing                   bool // do we think we are bouncing?
+	ctrlSportsMode                 bool  // are we in 'sports' (a.k.a. 'Fast') mode?
+	ctrlBouncing                   bool  // do we think we are bouncing?
 	VideoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
@@ -376,7 +376,6 @@ func (tello *Tello) UpdateSticks(sm StickMessage) {
 	tello.ctrlLy = sm.Ly
 	tello.ctrlRx = sm.Rx
 	tello.ctrlRy = sm.Ry
-	tello.ctrlThrottle = sm.Throttle
 	tello.ctrlMu.Unlock()
 }
 
@@ -405,11 +404,13 @@ func (tello *Tello) sendStickUpdate() {
 
 	// This packing of the joystick data is just vile...
 	var packedAxes uint64
-	packedAxes = jsInt16ToTello(tello.ctrlRx)
-	packedAxes |= jsInt16ToTello(tello.ctrlRy) << 11
-	packedAxes |= jsInt16ToTello(tello.ctrlLy) << 22
-	packedAxes |= jsInt16ToTello(tello.ctrlLx) << 33
-	packedAxes |= jsInt16ToTello(tello.ctrlThrottle) << 44
+	packedAxes = jsInt16ToTello(tello.ctrlRx) & 0x07ff
+	packedAxes |= (jsInt16ToTello(tello.ctrlRy) & 0x07ff) << 11
+	packedAxes |= (jsInt16ToTello(tello.ctrlLy) & 0x07ff) << 22
+	packedAxes |= (jsInt16ToTello(tello.ctrlLx) & 0x07ff) << 33
+	if tello.ctrlSportsMode {
+		packedAxes |= 1 << 44
+	}
 
 	pkt.payload[0] = byte(packedAxes)
 	pkt.payload[1] = byte(packedAxes >> 8)
