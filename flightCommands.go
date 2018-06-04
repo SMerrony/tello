@@ -50,7 +50,18 @@ func (tello *Tello) Land() {
 
 	tello.ctrlSeq++
 	pkt := newPacket(ptSet, msgDoLand, tello.ctrlSeq, 1)
-	pkt.payload[0] = 0
+	pkt.payload[0] = 0 // see StopLanding() for use of this field
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// StopLanding cancels a land command.
+func (tello *Tello) StopLanding() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgDoLand, tello.ctrlSeq, 1)
+	pkt.payload[0] = 1
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -60,8 +71,8 @@ func (tello *Tello) PalmLand() {
 	defer tello.ctrlMu.Unlock()
 
 	tello.ctrlSeq++
-	pkt := newPacket(ptSet, msgDoLand, tello.ctrlSeq, 1)
-	pkt.payload[0] = 1
+	pkt := newPacket(ptSet, msgDoPalmLand, tello.ctrlSeq, 1)
+	pkt.payload[0] = 0
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -79,6 +90,17 @@ func (tello *Tello) Bounce() {
 		pkt.payload[0] = 0x30
 		tello.ctrlBouncing = true
 	}
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// Flip sends a flip flight command to the Tello.
+func (tello *Tello) Flip(dir FlipType) {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptFlip, msgDoFlip, tello.ctrlSeq, 1)
+	pkt.payload[0] = byte(dir)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -198,5 +220,31 @@ func (tello *Tello) SetFastMode() {
 func (tello *Tello) SetSlowMode() {
 	tello.SetSportsMode(false)
 }
+
+// Flips...
+
+// BackFlip - flip backwards.
+func (tello *Tello) BackFlip() { tello.Flip(FlipBackward) }
+
+// BackLeftFlip - flip backwards and to the left.
+func (tello *Tello) BackLeftFlip() { tello.Flip(FlipBackwardLeft) }
+
+// BackRightFlip - flip backwards and to the right.
+func (tello *Tello) BackRightFlip() { tello.Flip(FlipBackwardRight) }
+
+// ForwardFlip - flip forwards.
+func (tello *Tello) ForwardFlip() { tello.Flip(FlipForward) }
+
+// ForwardRightFlip - flip forwardsand to the right.
+func (tello *Tello) ForwardRightFlip() { tello.Flip(FlipForwardRight) }
+
+// ForwardLeftFlip - flip forward and to the left.
+func (tello *Tello) ForwardLeftFlip() { tello.Flip(FlipForwardLeft) }
+
+// LeftFlip - flip to the left.
+func (tello *Tello) LeftFlip() { tello.Flip(FlipLeft) }
+
+// RightFlip - flip to the right.
+func (tello *Tello) RightFlip() { tello.Flip(FlipRight) }
 
 // *** End of 'macro' commands ***
