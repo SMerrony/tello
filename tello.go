@@ -39,7 +39,7 @@ const (
 
 const keepAlivePeriodMs = 50
 
-// Tello holds the current state of a connection to a Tello drone
+// Tello holds the current state of a connection to a Tello drone.
 type Tello struct {
 	ctrlMu                         sync.RWMutex // this mutex protects the control fields
 	ctrlConn, videoConn            *net.UDPConn
@@ -49,7 +49,7 @@ type Tello struct {
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
 	ctrlSportsMode                 bool  // are we in 'sports' (a.k.a. 'Fast') mode?
 	ctrlBouncing                   bool  // do we think we are bouncing?
-	VideoChan                      chan []byte
+	videoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
@@ -58,7 +58,7 @@ type Tello struct {
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
-// It then starts listening for responses on the control channel and waits for the Tello to respond
+// It then starts listening for responses on the control channel and processes them in a Goroutine.
 func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
 	// first check that we are not already connected or connecting
 	tello.ctrlMu.RLock()
@@ -120,12 +120,12 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 }
 
 // ControlConnectDefault attempts to connect to a Tello on the default network addresses.
-// It then starts listening for responses on the control channel and waits for the Tello to respond
+// It then starts listening for responses on the control channel and processes them in a Goroutine.
 func (tello *Tello) ControlConnectDefault() (err error) {
 	return tello.ControlConnect(defaultTelloAddr, defaultTelloControlPort, defaultLocalControlPort)
 }
 
-// ControlDisconnect stops the control channel listener and closes the connection to a Tello
+// ControlDisconnect stops the control channel listener and closes the connection to a Tello.
 func (tello *Tello) ControlDisconnect() {
 	// TODO should we tell the Tello we are disconnecting?
 	tello.ctrlStopChan <- true
@@ -133,7 +133,7 @@ func (tello *Tello) ControlDisconnect() {
 	tello.ctrlConnected = false
 }
 
-// ControlConnected returns true if we are currently connected
+// ControlConnected returns true if we are currently connected.
 func (tello *Tello) ControlConnected() (c bool) {
 	tello.ctrlMu.RLock()
 	c = tello.ctrlConnected
@@ -141,7 +141,7 @@ func (tello *Tello) ControlConnected() (c bool) {
 	return c
 }
 
-// GetFlightData returns the current known state of the Tello
+// GetFlightData returns the current known state of the Tello.
 func (tello *Tello) GetFlightData() FlightData {
 	tello.fdMu.RLock()
 	rfd := tello.fd
@@ -149,10 +149,10 @@ func (tello *Tello) GetFlightData() FlightData {
 	return rfd
 }
 
-// StreamFlightData starts a Goroutine which sends FlightData to a channel
-// If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored
-// If asAvailable is false then updates are send every periodMs
-// This streamer does not block on the channel, so unconsumed updates are lost
+// StreamFlightData starts a Goroutine which sends FlightData to a channel.
+//   If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored. TODO.
+//   If asAvailable is false then updates are sent every periodMs
+//   N.B. This streamer does not block on the channel, so unconsumed updates are lost.
 func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) (<-chan FlightData, error) {
 	tello.fdMu.RLock()
 	if tello.fdStreaming {
@@ -357,7 +357,7 @@ func (tello *Tello) stickListener() {
 }
 
 // StartStickListener starts a Goroutine which listens for StickMessages on a channel
-// and applies them to the Tello
+// and applies them to the Tello.  All four axes are updated on each message recieved.
 func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) {
 	if tello.stickListening {
 		return nil, errors.New("Cannot start another StickListener, already one running")
@@ -369,7 +369,8 @@ func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) 
 	return tello.stickChan, nil
 }
 
-// UpdateSticks does a one-off update of the stick values which are then sent to the Tello
+// UpdateSticks does a one-off update of the stick values which are then sent to the Tello.
+// N.B. All four axes are updated on every call to this func.
 func (tello *Tello) UpdateSticks(sm StickMessage) {
 	tello.ctrlMu.Lock()
 	tello.ctrlLx = sm.Lx

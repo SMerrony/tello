@@ -1,6 +1,6 @@
 // flightCommands.go
 
-// This file contains the high-level Tello flight command API
+// This file contains Tello flight command API except for stick control.
 
 // Copyright (C) 2018  Steve Merrony
 
@@ -23,7 +23,7 @@
 
 package tello
 
-// TakeOff sends a normal takeoff request to the Tello
+// TakeOff sends a normal takeoff request to the Tello.
 func (tello *Tello) TakeOff() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -33,7 +33,7 @@ func (tello *Tello) TakeOff() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// ThrowTakeOff initiates a 'throw and go' launch
+// ThrowTakeOff initiates a 'throw and go' launch.
 func (tello *Tello) ThrowTakeOff() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -43,7 +43,7 @@ func (tello *Tello) ThrowTakeOff() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// Land sends a normal Land request to the Tello
+// Land sends a normal Land request to the Tello.
 func (tello *Tello) Land() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -54,7 +54,7 @@ func (tello *Tello) Land() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// PalmLand initiates a Palm Landing
+// PalmLand initiates a Palm Landing.
 func (tello *Tello) PalmLand() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -65,7 +65,7 @@ func (tello *Tello) PalmLand() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// Bounce toggles the bouncing mode of the Tello
+// Bounce toggles the bouncing mode of the Tello.
 func (tello *Tello) Bounce() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -85,7 +85,7 @@ func (tello *Tello) Bounce() {
 // *** The following are 'macro' commands which are here purely
 // *** to make the Tello easier to use in some circumstances.
 
-// Hover simply sets the sticks to zero - useful as a panic action!
+// Hover simply sets the sticks to zero which should halt all motion - useful as a panic action!
 func (tello *Tello) Hover() {
 	tello.ctrlMu.Lock()
 	tello.ctrlLx = 0
@@ -95,7 +95,7 @@ func (tello *Tello) Hover() {
 	tello.ctrlMu.Unlock()
 }
 
-// Forward tells the drone to start moving forward at a given speed between 0 and 100
+// Forward tells the drone to start moving forward at a given speed between 0 and 100.
 func (tello *Tello) Forward(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -104,7 +104,7 @@ func (tello *Tello) Forward(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: speed, Lx: 0, Ly: 0})
 }
 
-// Backward tells the drone to start moving Backward at a given speed between 0 and 100
+// Backward tells the drone to start moving Backward at a given speed between 0 and 100.
 func (tello *Tello) Backward(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -113,7 +113,7 @@ func (tello *Tello) Backward(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: -speed, Lx: 0, Ly: 0})
 }
 
-// Left tells the drone to start moving Left at a given speed between 0 and 100
+// Left tells the drone to start moving Left at a given speed between 0 and 100.
 func (tello *Tello) Left(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -122,7 +122,7 @@ func (tello *Tello) Left(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: -speed, Ry: 0, Lx: 0, Ly: 0})
 }
 
-// Right tells the drone to start moving Right at a given speed between 0 and 100
+// Right tells the drone to start moving Right at a given speed between 0 and 100.
 func (tello *Tello) Right(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -131,7 +131,7 @@ func (tello *Tello) Right(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: speed, Ry: 0, Lx: 0, Ly: 0})
 }
 
-// Up tells the drone to start moving Up at a given speed between 0 and 100
+// Up tells the drone to start moving Up at a given speed between 0 and 100.
 func (tello *Tello) Up(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -140,7 +140,7 @@ func (tello *Tello) Up(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: 0, Ly: speed})
 }
 
-// Down tells the drone to start moving Down at a given speed between 0 and 100
+// Down tells the drone to start moving Down at a given speed between 0 and 100.
 func (tello *Tello) Down(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -149,7 +149,7 @@ func (tello *Tello) Down(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: 0, Ly: -speed})
 }
 
-// Clockwise tells the drone to start rotating Clockwise at a given speed between 0 and 100
+// Clockwise tells the drone to start rotating Clockwise at a given speed between 0 and 100.
 func (tello *Tello) Clockwise(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -158,12 +158,12 @@ func (tello *Tello) Clockwise(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: speed, Ly: 0})
 }
 
-// TurnRight is an alias for Clockwise()
+// TurnRight is an alias for Clockwise().
 func (tello *Tello) TurnRight(pct int) {
 	tello.Clockwise(pct)
 }
 
-// Anticlockwise tells the drone to start rotating Anticlockwise at a given speed between 0 and 100
+// Anticlockwise tells the drone to start rotating Anticlockwise at a given speed between 0 and 100.
 func (tello *Tello) Anticlockwise(pct int) {
 	var speed int16
 	if pct > 0 {
@@ -172,29 +172,29 @@ func (tello *Tello) Anticlockwise(pct int) {
 	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: -speed, Ly: 0})
 }
 
-// TurnLeft is an alias for Anticlockwise()
+// TurnLeft is an alias for Anticlockwise().
 func (tello *Tello) TurnLeft(pct int) {
 	tello.Anticlockwise(pct)
 }
 
-// CounterClockwise is an alias for Anticlockwise()
+// CounterClockwise is an alias for Anticlockwise().
 func (tello *Tello) CounterClockwise(pct int) {
 	tello.Anticlockwise(pct)
 }
 
-// SetSportsMode sets the sports mode of flight to the given value
+// SetSportsMode sets the sports mode of flight to the given value.
 func (tello *Tello) SetSportsMode(sports bool) {
 	tello.ctrlMu.Lock()
 	tello.ctrlSportsMode = sports
 	tello.ctrlMu.Unlock()
 }
 
-// SetFastMode sets the 'fast' or 'sports' mode of flight
+// SetFastMode sets the 'fast' or 'sports' mode of flight.
 func (tello *Tello) SetFastMode() {
 	tello.SetSportsMode(true)
 }
 
-// SetSlowMode sets the 'slow' or 'normal' mode of flight
+// SetSlowMode sets the 'slow' or 'normal' mode of flight.
 func (tello *Tello) SetSlowMode() {
 	tello.SetSportsMode(false)
 }

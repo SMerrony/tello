@@ -23,7 +23,7 @@ package tello
 
 const msgHdr = 0xcc // 204
 
-// packet is our representation of the messages passed to/from the Tello
+// packet is our internal representation of the messages passed to/from the Tello
 type packet struct {
 	header        byte
 	size13        uint16
@@ -103,10 +103,10 @@ const (
 	msgGetAttitude       = 0x1059 // 4185
 )
 
-// FlipType represents a flip direction
+// FlipType represents a flip direction.
 type FlipType int
 
-// Flip types
+// Flip types...
 const (
 	FlipForward FlipType = iota
 	FlipLeft
@@ -118,31 +118,33 @@ const (
 	FlipForwardRight
 )
 
-// SvCmd is Smart Video command
+// SvCmd is Smart Video command.
 type SvCmd int
 
-// Smart Video messages
+// Smart Video commands...
 const (
-	SvStop SvCmd = iota
-	Sv360
-	SvCircle
-	SvUpOut
+	SvStop   SvCmd = iota // Stop any Smart Video command in progress.
+	Sv360                 // Slowly rotate around 360 degrees.
+	SvCircle              // Circle around a point in front of the drone.
+	SvUpOut               // Perform the 'Up and Out' manouvre.
 )
 
-// VBR is a Video Bit Rate, the int value is meaningless
+// VBR is a Video Bit Rate, the int value is meaningless.
 type VBR int
 
-// video bit rate (mbps)
+// VBR settings...
 const (
-	VbrAuto VBR = iota
-	Vbr1M
-	Vbr1M5
-	Vbr2M
-	Vbr3M
-	Vbr4M
+	VbrAuto VBR = iota // let the Tello choose the best for the current connection
+	Vbr1M              // Set the VBR to 1Mbps
+	Vbr1M5             // Set the VBR to 1.5Mbps
+	Vbr2M              // Set the VBR to 2Mbps
+	Vbr3M              // Set the VBR to 3Mbps
+	Vbr4M              // Set the VBR to 4mbps
 )
 
-// FlightData payload from the Tello
+// FlightData holds our current knowledge of the drone's state.
+// This data is not all sent at once from the drone, different fields may be updated
+// at varying rates.
 type FlightData struct {
 	BatteryLow               bool
 	BatteryLower             bool
@@ -183,15 +185,11 @@ type FlightData struct {
 	WindState                bool
 }
 
-// StickMessage holds the values of a joystick update
+// StickMessage holds the signed 16-bit values of a joystick update.
+// Each value can range from -32768 to 32767
 type StickMessage struct {
 	Rx, Ry, Lx, Ly int16
 }
-
-// func createBufferForMsgType(mType int) (buff []byte) {
-
-// 	return buff
-// }
 
 // utility funcs for message handling
 

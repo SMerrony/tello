@@ -32,11 +32,12 @@ const (
 	defaultLocalVideoPort = 8801
 )
 
-// VideoConnect attempts to connect to a Tello video channel at the provided addr and starts a listener
-func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort int) (err error) {
+// VideoConnect attempts to connect to a Tello video channel at the provided addr and starts a listener.
+// A channel of raw H.264 video frames is returned along with any error.
+func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort int) (<-chan []byte, error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUDPPort))
 	// if err != nil {
@@ -44,21 +45,22 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort 
 	// }
 	tello.videoConn, err = net.ListenUDP("udp", droneAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tello.videoStopChan = make(chan bool, 2)
-	tello.VideoChan = make(chan []byte, 100)
+	tello.videoChan = make(chan []byte, 100)
 	go tello.videoResponseListener()
 	log.Println("Video connection setup complete")
-	return nil
+	return tello.videoChan, nil
 }
 
-// VideoConnectDefault attempts to connect to a Tello video channel using default addresses, then starts a listener
-func (tello *Tello) VideoConnectDefault() (err error) {
+// VideoConnectDefault attempts to connect to a Tello video channel using default addresses, then starts a listener.
+// A channel of raw H.264 video frames is returned along with any error.
+func (tello *Tello) VideoConnectDefault() (<-chan []byte, error) {
 	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort, defaultLocalVideoPort)
 }
 
-// VideoDisconnect closes the connecttion to the video channel
+// VideoDisconnect closes the connection to the video channel.
 func (tello *Tello) VideoDisconnect() {
 	// TODO Should we tell the Tello we are stopping video listening?
 	tello.videoStopChan <- true
@@ -73,13 +75,13 @@ func (tello *Tello) videoResponseListener() {
 			log.Printf("Error reading from video channel - %v\n", err)
 		}
 		select {
-		case tello.VideoChan <- vbuf[2:n]:
+		case tello.videoChan <- vbuf[2:n]:
 		default: // so we don't block
 		}
 	}
 }
 
-// SetVideoBitrate ask the Tello to use the specified bitrate (or auto) for video encoding
+// SetVideoBitrate ask the Tello to use the specified bitrate (or auto) for video encoding.
 func (tello *Tello) SetVideoBitrate(vbr VBR) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -102,7 +104,7 @@ func (tello *Tello) SetVideoBitrate(vbr VBR) {
 	log.Printf("Set Video Bitrate command sent to drone % x\n", buff)
 }
 
-// StartVideo asks the Tello to start sending video
+// StartVideo asks the Tello to start sending video.
 func (tello *Tello) StartVideo() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
