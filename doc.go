@@ -1,8 +1,8 @@
-/*Package tello provides an unofficial, easy-to-use, standalone API for the Ryze DJI Tello drone.
+/*Package tello provides an unofficial, easy-to-use, standalone API for the Ryze Tello® drone.
 
 Disclaimer
 
-The author of this package is in no way linked to Ryze, DJI, or Intel.  The package has been developed by
+Tello is a registered trademark of Ryze Tech.  The author of this package is in no way linked to Ryze, DJI, or Intel.  The package has been developed by
 gathering together information from a variety of sources on the Internet (especially https://tellopilots.com) and by
 examining data packets sent to/from the Tello.  The package will probably be extended as more knowledge of the drone's
 protocol is obtained.
