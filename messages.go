@@ -142,6 +142,41 @@ const (
 	Vbr4M              // Set the VBR to 4mbps
 )
 
+// FileType is the type of file being sent to/from the drone
+type FileType byte
+
+// Known File Types...
+const (
+	FtJPEG FileType = 1
+)
+
+type fileData struct {
+	fileType  FileType // 1 = JPEG
+	fileSize  uint32
+	fileBytes []byte
+}
+
+type fileInternal struct {
+	fID          uint16
+	expectedSize int
+	accumSize    int
+	pieces       []filePiece
+}
+
+type filePiece struct {
+	fID       uint16
+	numChunks int
+	chunks    [8]fileChunk
+}
+
+type fileChunk struct {
+	fID       uint16
+	pieceNum  uint32
+	chunkNum  uint32
+	chunkLen  uint16
+	chunkData []byte
+}
+
 // FlightData holds our current knowledge of the drone's state.
 // This data is not all sent at once from the drone, different fields may be updated
 // at varying rates.
@@ -301,4 +336,20 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	fd.OverTemp = (pl[23] & 1) == 1
 
 	return fd
+}
+
+func payloadToFileInfo(pl []byte) (fType FileType, fSize uint32, fID uint16) {
+	fType = FileType(pl[0])
+	fSize = uint32(pl[1]) + uint32(pl[2])<<8 + uint32(pl[3])<<16 + uint32(pl[4])<<24
+	fID = uint16(pl[5]) + uint16(pl[6])<<8
+	return fType, fSize, fID
+}
+
+func payloadToFileChunk(pl []byte) (fc fileChunk) {
+	fc.fID = uint16(pl[0]) + uint16(pl[1])<<8
+	fc.pieceNum = uint32(pl[2]) + uint32(pl[3])<<8 + uint32(pl[4])<<16 + uint32(pl[5])<<24
+	fc.chunkNum = uint32(pl[6]) + uint32(pl[7])<<8 + uint32(pl[8])<<16 + uint32(pl[9])<<24
+	fc.chunkLen = uint16(pl[10]) + uint16(pl[11])<<8
+	fc.chunkData = pl[12:]
+	return fc
 }

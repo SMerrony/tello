@@ -86,22 +86,10 @@ func (tello *Tello) SetVideoBitrate(vbr VBR) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
-	var pkt packet
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptSet
-	pkt.messageID = msgSetVideoBitrate
 	tello.ctrlSeq++
-	pkt.sequence = tello.ctrlSeq
-	pkt.payload = make([]byte, 1)
+	pkt := newPacket(ptSet, msgSetVideoBitrate, tello.ctrlSeq, 1)
 	pkt.payload[0] = byte(vbr)
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-
-	// send the command packet
-	tello.ctrlConn.Write(buff)
-	log.Printf("Set Video Bitrate command sent to drone % x\n", buff)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
 // StartVideo asks the Tello to start sending video.
@@ -109,15 +97,6 @@ func (tello *Tello) StartVideo() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
-	var pkt packet
-	// populate the command packet fields we need
-	pkt.header = msgHdr
-	pkt.toDrone = true
-	pkt.packetType = ptData2
-	pkt.messageID = msgGetVideoSPSPPS
-	pkt.sequence = 0 // always zero
-	// pack the packet into raw format and calculate CRCs etc.
-	buff := packetToBuffer(pkt)
-	// send the command packet
-	tello.ctrlConn.Write(buff)
+	pkt := newPacket(ptData2, msgGetVideoSPSPPS, 0, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
 }

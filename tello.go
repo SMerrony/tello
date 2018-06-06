@@ -55,6 +55,8 @@ type Tello struct {
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
 	fd                             FlightData        // our private amalgamated store of the latest data
 	fdStreaming                    bool              // are we currently sending FlightData out?
+	files                          map[uint16]fileData
+	fileTemp                       fileInternal
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.
@@ -90,6 +92,7 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	// start the control listener Goroutine
 	tello.ctrlMu.Lock()
 	tello.ctrlStopChan = make(chan bool, 2)
+	tello.files = make(map[uint16]fileData)
 	tello.ctrlMu.Unlock()
 	go tello.controlResponseListener()
 
@@ -220,6 +223,44 @@ func (tello *Tello) controlResponseListener() {
 				switch pkt.messageID {
 				case msgDoLand: // ignore for now
 				case msgDoTakeoff: // ignore for now
+				case msgFileSize: // initial response to Take Picture command
+					ft, fs, fID := payloadToFileInfo(pkt.payload)
+					log.Printf("Take pic response: type: %d, size: %d, ID: %d\n", ft, fs, fID)
+					if ft != FtJPEG {
+						log.Printf("Unexpected file type <%d> received in response to take picture command\n", ft)
+					} else {
+						// set up for receiving picture chunks
+						// tello.files[fID] = fileData{fileType: ft, fileSize: fs, fileBytes: make([]byte, fs)}
+						tello.fileTemp.fID = fID
+						tello.fileTemp.expectedSize = int(fs)
+						tello.fileTemp.accumSize = 0
+						tello.fileTemp.pieces = make([]filePiece, 1024)
+						// acknowledge the file size
+						tello.sendFileSize()
+					}
+				case msgFileData:
+					thisChunk := payloadToFileChunk(pkt.payload)
+					log.Printf("Got pic chunk - ID: %d, Piece: %d, Chunk: %d\n", thisChunk.fID, thisChunk.pieceNum, thisChunk.chunkNum)
+					for len(tello.fileTemp.pieces) <= int(thisChunk.pieceNum) {
+						tello.fileTemp.pieces = append(tello.fileTemp.pieces, filePiece{})
+					}
+					//tello.fileTemp.pieces[thisChunk.pieceNum].chunks = append(tello.fileTemp.pieces[thisChunk.pieceNum].chunks, fileChunk{})
+					if tello.fileTemp.pieces[thisChunk.pieceNum].numChunks < 8 {
+						tello.fileTemp.pieces[thisChunk.pieceNum].chunks[tello.fileTemp.pieces[thisChunk.pieceNum].numChunks].chunkData = thisChunk.chunkData
+						tello.fileTemp.accumSize += len(thisChunk.chunkData)
+					}
+					tello.fileTemp.pieces[thisChunk.pieceNum].numChunks++
+					if tello.fileTemp.pieces[thisChunk.pieceNum].numChunks == 8 {
+						// piece has 8 chunks, it's complete
+						tello.sendFileAckPiece(0, thisChunk.fID, thisChunk.pieceNum)
+						log.Printf("Acknowledging piece: %d\n", thisChunk.pieceNum)
+					}
+					if tello.fileTemp.accumSize == tello.fileTemp.expectedSize {
+						tello.sendFileAckPiece(1, thisChunk.fID, thisChunk.pieceNum)
+						tello.sendFileDone(thisChunk.fID, tello.fileTemp.accumSize)
+						log.Printf("Acknowledging file recieved - %d bytes\n", tello.fileTemp.accumSize)
+					}
+				//case msgFileDone:
 				case msgFlightStatus:
 					tmpFd := payloadToFlightData(pkt.payload)
 					tello.fdMu.Lock()
