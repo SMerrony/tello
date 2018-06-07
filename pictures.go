@@ -22,20 +22,25 @@
 package tello
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"sort"
 )
 
 // TakePicture requests the Tello to take a JPEG snapshot
-func (tello *Tello) TakePicture() {
-	tello.filesMu.Lock()
+func (tello *Tello) TakePicture() (err error) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
+	if tello.filesBusy {
+		return errors.New("Already processing a file")
+	}
+	tello.filesBusy = true
 	tello.ctrlSeq++
 	pkt := newPacket(ptSet, msgDoTakePic, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
+	return nil
 }
 
 func (tello *Tello) sendFileSize() {
@@ -93,7 +98,7 @@ func (tello *Tello) reassembleFile() {
 	}
 	tello.files = append(tello.files, fd)
 	tello.fileTemp = fileInternal{}
-	tello.filesMu.Unlock()
+	tello.filesBusy = false
 }
 
 // NumPics returns the number of JPEG pictures we are storing in memory

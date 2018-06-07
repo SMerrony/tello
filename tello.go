@@ -55,7 +55,7 @@ type Tello struct {
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
 	fd                             FlightData        // our private amalgamated store of the latest data
 	fdStreaming                    bool              // are we currently sending FlightData out?
-	filesMu                        sync.Mutex
+	filesBusy                      bool
 	files                          []fileData
 	fileTemp                       fileInternal
 }
