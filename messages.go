@@ -167,7 +167,7 @@ type fileInternal struct {
 type filePiece struct {
 	fID       uint16
 	numChunks int
-	chunks    [8]fileChunk
+	chunks    []fileChunk
 }
 
 type fileChunk struct {

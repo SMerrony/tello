@@ -55,6 +55,7 @@ type Tello struct {
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
 	fd                             FlightData        // our private amalgamated store of the latest data
 	fdStreaming                    bool              // are we currently sending FlightData out?
+	filesMu                        sync.Mutex
 	files                          []fileData
 	fileTemp                       fileInternal
 }
@@ -244,10 +245,18 @@ func (tello *Tello) controlResponseListener() {
 					for len(tello.fileTemp.pieces) <= int(thisChunk.pieceNum) {
 						tello.fileTemp.pieces = append(tello.fileTemp.pieces, filePiece{})
 					}
-					//tello.fileTemp.pieces[thisChunk.pieceNum].chunks = append(tello.fileTemp.pieces[thisChunk.pieceNum].chunks, fileChunk{})
 					if tello.fileTemp.pieces[thisChunk.pieceNum].numChunks < 8 {
-						tello.fileTemp.pieces[thisChunk.pieceNum].chunks[tello.fileTemp.pieces[thisChunk.pieceNum].numChunks].chunkData = thisChunk.chunkData
-						tello.fileTemp.accumSize += len(thisChunk.chunkData)
+						// check if we already have this chunk
+						already := false
+						for _, c := range tello.fileTemp.pieces[thisChunk.pieceNum].chunks {
+							if c.chunkNum == thisChunk.chunkNum {
+								already = true
+							}
+						}
+						if !already {
+							tello.fileTemp.pieces[thisChunk.pieceNum].chunks = append(tello.fileTemp.pieces[thisChunk.pieceNum].chunks, thisChunk)
+							tello.fileTemp.accumSize += len(thisChunk.chunkData)
+						}
 					}
 					tello.fileTemp.pieces[thisChunk.pieceNum].numChunks++
 					if tello.fileTemp.pieces[thisChunk.pieceNum].numChunks == 8 {

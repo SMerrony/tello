@@ -24,10 +24,12 @@ package tello
 import (
 	"fmt"
 	"io/ioutil"
+	"sort"
 )
 
 // TakePicture requests the Tello to take a JPEG snapshot
 func (tello *Tello) TakePicture() {
+	tello.filesMu.Lock()
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
@@ -80,17 +82,18 @@ func (tello *Tello) reassembleFile() {
 	// we expect the pieces to be in order
 	for _, p := range tello.fileTemp.pieces {
 		// the chunks may not be in order, we must sort them
-		// if p.numChunks > 1 {
-		// 	sort.Slice(p.chunks, func(i, j int) bool {
-		// 		return p.chunks[i].chunkNum < p.chunks[j].chunkNum
-		// 	})
-		// }
+		if p.numChunks > 1 {
+			sort.Slice(p.chunks, func(i, j int) bool {
+				return int(p.chunks[i].chunkNum) < int(p.chunks[j].chunkNum)
+			})
+		}
 		for _, c := range p.chunks {
 			fd.fileBytes = append(fd.fileBytes, c.chunkData...)
 		}
 	}
 	tello.files = append(tello.files, fd)
 	tello.fileTemp = fileInternal{}
+	tello.filesMu.Unlock()
 }
 
 // NumPics returns the number of JPEG pictures we are storing in memory
@@ -109,7 +112,7 @@ func (tello *Tello) NumPics() (np int) {
 func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 	for _, f := range tello.files {
 		if f.fileType == FtJPEG {
-			filename := fmt.Sprintf("%s_%d", prefix, np)
+			filename := fmt.Sprintf("%s_%d.jpg", prefix, np)
 			err = ioutil.WriteFile(filename, f.fileBytes, 0644)
 			if err != nil {
 				break
