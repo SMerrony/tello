@@ -16,7 +16,7 @@ The following features have been implemented...
   * Drone built-in flight commands, eg. Takeoff(), PalmLand()
   * Macro-level flight control, eg. Forward(), Up()
   * Video stream support
-  * Picture support - TODO
+  * Picture taking/saving support 
   * Multiple drone support - Untested
 
 An example application using this package is available at http://github.com/SMerrony/tello-desktop/cmd/tello-package
