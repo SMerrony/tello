@@ -22,12 +22,15 @@ The following features have been implemented...
 An example application using this package is available at http://github.com/SMerrony/tello-desktop/cmd/tello-package
 
 ## Concepts
-
+### Connection Types
 The drone provides two types of connection: a 'control' connection which handles all commands
 to and from the drone including flight, status and (still) pictures, and a 'video' connection which
 provides an H.264 video stream from the forward-facing camera.  
 
 You must establish a control connection to use the drone, but the video connection is optional and cannot be started unless a control connection is running.
 
-Certain functions are available in two forms: single-shot function calls and streaming (channel) data flows.
-Eg. GetFlightData() vs. StreamFlightData(), and UpdateSticks() vs. StartStickListener().  Use whichever paradigm you prefer, but be aware that the channel-based calls should return immediately (the channels are buffered) whereas the function-based options could conceivably cause your application to pause very briefly if the Tello is very busy; in practice, the author has not found this to be an issue.
+### Funcs vs. Channels
+Certain functionality is made available in two forms: single-shot function calls and streaming (channel) data flows.
+Eg. GetFlightData() vs. StreamFlightData(), and UpdateSticks() vs. StartStickListener().  
+
+Use whichever paradigm you prefer, but be aware that the channel-based calls should return immediately (the channels are buffered) whereas the function-based options could conceivably cause your application to pause very briefly if the Tello is very busy; in practice, the author has not found this to be an issue.
