@@ -21,6 +21,11 @@
 
 package tello
 
+import (
+	"fmt"
+	"io/ioutil"
+)
+
 // TakePicture requests the Tello to take a JPEG snapshot
 func (tello *Tello) TakePicture() {
 	tello.ctrlMu.Lock()
@@ -65,4 +70,52 @@ func (tello *Tello) sendFileDone(fID uint16, size int) {
 	pkt.payload[4] = byte(size >> 16)
 	pkt.payload[5] = byte(size >> 24)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// reassembleFile reassembles a chunked file in tello.fileTemp into a contiguous byte array in tello.files
+func (tello *Tello) reassembleFile() {
+	var fd fileData
+	fd.fileType = tello.fileTemp.fileType
+	fd.fileSize = tello.fileTemp.accumSize
+	// we expect the pieces to be in order
+	for _, p := range tello.fileTemp.pieces {
+		// the chunks may not be in order, we must sort them
+		// if p.numChunks > 1 {
+		// 	sort.Slice(p.chunks, func(i, j int) bool {
+		// 		return p.chunks[i].chunkNum < p.chunks[j].chunkNum
+		// 	})
+		// }
+		for _, c := range p.chunks {
+			fd.fileBytes = append(fd.fileBytes, c.chunkData...)
+		}
+	}
+	tello.files = append(tello.files, fd)
+	tello.fileTemp = fileInternal{}
+}
+
+// NumPics returns the number of JPEG pictures we are storing in memory
+func (tello *Tello) NumPics() (np int) {
+	for _, f := range tello.files {
+		if f.fileType == FtJPEG {
+			np++
+		}
+	}
+	return np
+}
+
+// SaveAllPics writes all JPEG pictures to disk using the given prefix
+// and an appended index, it returns the number of pix written &/or an error.
+// If there is no error, the pictures are removed from memory.
+func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
+	for _, f := range tello.files {
+		if f.fileType == FtJPEG {
+			filename := fmt.Sprintf("%s_%d", prefix, np)
+			err = ioutil.WriteFile(filename, f.fileBytes, 0644)
+			if err != nil {
+				break
+			}
+			np++
+		}
+	}
+	return np, nil
 }

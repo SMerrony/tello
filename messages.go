@@ -152,12 +152,13 @@ const (
 
 type fileData struct {
 	fileType  FileType // 1 = JPEG
-	fileSize  uint32
+	fileSize  int
 	fileBytes []byte
 }
 
 type fileInternal struct {
 	fID          uint16
+	fileType     FileType
 	expectedSize int
 	accumSize    int
 	pieces       []filePiece
