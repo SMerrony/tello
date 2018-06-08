@@ -226,13 +226,13 @@ func (tello *Tello) controlResponseListener() {
 				case msgFileSize: // initial response to Take Picture command
 					ft, fs, fID := payloadToFileInfo(pkt.payload)
 					//log.Printf("Take pic response: type: %d, size: %d, ID: %d\n", ft, fs, fID)
-					if ft != FtJPEG {
+					if ft != ftJPEG {
 						log.Printf("Unexpected file type <%d> received in response to take picture command\n", ft)
 					} else {
 						// set up for receiving picture chunks
 						// tello.files[fID] = fileData{fileType: ft, fileSize: fs, fileBytes: make([]byte, fs)}
 						tello.fileTemp.fID = fID
-						tello.fileTemp.fileType = ft
+						tello.fileTemp.filetype = ft
 						tello.fileTemp.expectedSize = int(fs)
 						tello.fileTemp.accumSize = 0
 						tello.fileTemp.pieces = make([]filePiece, 1024)

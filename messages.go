@@ -142,23 +142,23 @@ const (
 	Vbr4M              // Set the VBR to 4mbps
 )
 
-// FileType is the type of file being sent to/from the drone
-type FileType byte
+// fileType is the type of file being sent to/from the drone
+type fileType byte
 
 // Known File Types...
 const (
-	FtJPEG FileType = 1
+	ftJPEG fileType = 1
 )
 
 type fileData struct {
-	fileType  FileType // 1 = JPEG
+	fileType  fileType // 1 = JPEG
 	fileSize  int
 	fileBytes []byte
 }
 
 type fileInternal struct {
 	fID          uint16
-	fileType     FileType
+	filetype     fileType
 	expectedSize int
 	accumSize    int
 	pieces       []filePiece
@@ -339,8 +339,8 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	return fd
 }
 
-func payloadToFileInfo(pl []byte) (fType FileType, fSize uint32, fID uint16) {
-	fType = FileType(pl[0])
+func payloadToFileInfo(pl []byte) (fType fileType, fSize uint32, fID uint16) {
+	fType = fileType(pl[0])
 	fSize = uint32(pl[1]) + uint32(pl[2])<<8 + uint32(pl[3])<<16 + uint32(pl[4])<<24
 	fID = uint16(pl[5]) + uint16(pl[6])<<8
 	return fType, fSize, fID

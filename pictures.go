@@ -82,7 +82,7 @@ func (tello *Tello) sendFileDone(fID uint16, size int) {
 // reassembleFile reassembles a chunked file in tello.fileTemp into a contiguous byte array in tello.files
 func (tello *Tello) reassembleFile() {
 	var fd fileData
-	fd.fileType = tello.fileTemp.fileType
+	fd.fileType = tello.fileTemp.filetype
 	fd.fileSize = tello.fileTemp.accumSize
 	// we expect the pieces to be in order
 	for _, p := range tello.fileTemp.pieces {
@@ -104,7 +104,7 @@ func (tello *Tello) reassembleFile() {
 // NumPics returns the number of JPEG pictures we are storing in memory
 func (tello *Tello) NumPics() (np int) {
 	for _, f := range tello.files {
-		if f.fileType == FtJPEG {
+		if f.fileType == ftJPEG {
 			np++
 		}
 	}
@@ -116,7 +116,7 @@ func (tello *Tello) NumPics() (np int) {
 // If there is no error, the pictures are removed from memory.
 func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 	for _, f := range tello.files {
-		if f.fileType == FtJPEG {
+		if f.fileType == ftJPEG {
 			filename := fmt.Sprintf("%s_%d.jpg", prefix, np)
 			err = ioutil.WriteFile(filename, f.fileBytes, 0644)
 			if err != nil {
