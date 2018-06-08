@@ -22,24 +22,24 @@
 package tello
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"sort"
 )
 
-// TakePicture requests the Tello to take a JPEG snapshot
+// TakePicture requests the Tello to take a JPEG snapshot.
+// The process takes a little while to complete and the video may freeze
+// during photography.  Sometime the Tello does not honour the request.
+// The pictures are stored in the tello struct until saved by eg. SaveAllPics().
 func (tello *Tello) TakePicture() (err error) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
-	if tello.filesBusy {
-		return errors.New("Already processing a file")
-	}
-	tello.filesBusy = true
 	tello.ctrlSeq++
 	pkt := newPacket(ptSet, msgDoTakePic, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
+	log.Println("Sent take picture request")
 	return nil
 }
 
@@ -82,6 +82,9 @@ func (tello *Tello) sendFileDone(fID uint16, size int) {
 // reassembleFile reassembles a chunked file in tello.fileTemp into a contiguous byte array in tello.files
 func (tello *Tello) reassembleFile() {
 	var fd fileData
+	tello.fdMu.Lock()
+	defer tello.fdMu.Unlock()
+
 	fd.fileType = tello.fileTemp.filetype
 	fd.fileSize = tello.fileTemp.accumSize
 	// we expect the pieces to be in order
@@ -98,7 +101,6 @@ func (tello *Tello) reassembleFile() {
 	}
 	tello.files = append(tello.files, fd)
 	tello.fileTemp = fileInternal{}
-	tello.filesBusy = false
 }
 
 // NumPics returns the number of JPEG pictures we are storing in memory
@@ -112,7 +114,7 @@ func (tello *Tello) NumPics() (np int) {
 }
 
 // SaveAllPics writes all JPEG pictures to disk using the given prefix
-// and an appended index, it returns the number of pix written &/or an error.
+// and a generated index number. It returns the number of pictures written &/or an error.
 // If there is no error, the pictures are removed from memory.
 func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 	for _, f := range tello.files {
@@ -125,5 +127,6 @@ func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 			np++
 		}
 	}
+	tello.files = nil
 	return np, nil
 }
