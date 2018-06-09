@@ -19,7 +19,7 @@ The following features have been implemented...
   * Picture taking/saving support 
   * Multiple drone support - Untested
 
-An example application using this package is available at http://github.com/SMerrony/tello-desktop/cmd/tello-package
+An example application using this package is available at https://github.com/SMerrony/tello-desktop/blob/master/cmd/tello-package/tello-desktop.go
 
 ## Concepts
 ### Connection Types
