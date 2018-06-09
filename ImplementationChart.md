@@ -10,7 +10,7 @@
 | Set SSID Password | → |  |  |
 | Get Wifi Region | → |  |  |
 | Set Wifi Region | → |  |  | 
-| Wifi Strength | ← |  | Handled by package - stored in FlightData |
+| Wifi Strength | ← | Y | Handled by package - stored in FlightData |
 | Set Video Bit-Rate | → | SetVideoBitrate() |  |
 | Set Video Dyn. Adj. Rate | → |  |  |
 | Set EIS | → |  |  |
@@ -20,12 +20,12 @@
 | Set Video Aspect | → |  |  |
 | Start Recording | → |  |  |
 | Exposure Values
-| Light Strength | ← |  | Handled by package - stored in FlightData |
+| Light Strength | ← | Y | Handled by package - stored in FlightData |
 | Get JPEG Quality | → |  |  |
 | Error 1 | ← |  |  |
 | Error 2 | ← |  |  |
 | Get Version | → |  |  |
-| Set Date & Time | ↔ |  | Handled by package |
+| Set Date & Time | ↔ | Y | Handled internally by package |
 | Get Activation Time | → |  |  |
 | Get Loader Version | → |  |  |
 | Set Sticks | → | UpdateSticks(), StartStickListener() | also, keepAlive sends these |
@@ -36,9 +36,9 @@
 | Flip | → | Flip(),  |  |
 | Throw Take Off | → | ThrowTakeOff() |  |
 | Palm Land | → | PalmLand() |  |
-| File Size | → |  |  |
-| File Data | → |  |  |
-| EOF | → |  |  |
+| File Size | → | Y | Handled by package internally |
+| File Data | → | Y |  Handled by package internally |
+| EOF | → | Y | Handled by package internally |
 | Start Smart Video | → |  |  |
 | Get Smart Video Status | → |  |  |
 | Log Header | ← |  | Currently ignored |
