@@ -1,57 +1,57 @@
 # Tello® Package Implementation Chart
 A list of the currently-known Tello functions and whether the package handles them.
 
-| Tello Function | Dir | Package Implementation | Comments |
-| -------------- | --- | ---------------------- | -------- |
-| Connect  | → | ControlConnect(), ControlConnectDefault() | These funcs wait up to 3s for the Tello to respond |
-| Connected | ← | ControlConnected() | (See comments for Connect) |
-| Get SSID | ↔ | GetSSID() | SSID is stored in FlightData when it is received |
-| Set SSID | → |  |  |
-| Get SSID Password | → |  |  |
-| Set SSID Password | → |  |  |
-| Get Wifi Region | → |  |  |
-| Set Wifi Region | → |  |  | 
-| Wifi Strength | ← | Y | Handled by package - stored in FlightData |
-| Set Video Bit-Rate | → | SetVideoBitrate() |  |
-| Set Video Dyn. Adj. Rate | → |  |  |
-| Set EIS | → |  |  |
-| Request Video Start | → | StartVideo() | Use VideoConnect() first, also see VideoDisconnect() |
-| Get Video Bit-Rate | → |  |  |
-| Take Picture | ↔ | TakePicture() | Can also be a response, see also NumPics() and SaveAllPics() |
-| Set Video Aspect | → |  |  |
-| Start Recording | → |  |  |
-| Exposure Values | | | |
-| Light Strength | ← | Y | Handled by package - stored in FlightData |
-| Get JPEG Quality | → |  |  |
-| Error 1 | ← |  |  |
-| Error 2 | ← |  |  |
-| Get Version | → |  |  |
-| Set Date & Time | ↔ | Y | Handled internally by package |
-| Get Activation Time | → |  |  |
-| Get Loader Version | → |  |  |
-| Set Sticks | → | UpdateSticks(), StartStickListener() | also, keepAlive sends these |
-| Take Off | → | TakeOff() | Ignored on receipt |
-| Land | ↔ | Land(), StopLanding() | Ignored on receipt |
-| Flight Status | ← | GetFlightData(), StreamFlightData() |  |
-| Set Height Limit | → |  |  |
-| Flip | → | Flip()  | Also see macro commands below eg. BackFlip() |
-| Throw Take Off | → | ThrowTakeOff() |  |
-| Palm Land | → | PalmLand() |  |
-| File Size | ← | Y | Handled by package internally |
-| File Data | ← | Y |  Handled by package internally |
-| EOF | ← | Y | Handled by package internally |
-| Start Smart Video | → |  |  |
-| Get Smart Video Status | → |  |  |
-| Log Header | ← |  | Currently ignored |
-| Log Data | ← |  |  |
-| Log Config. | ← |  |  |
-| Bounce | → | Bounce() | Toggles the Bounce mode |
-| Calibration | → |  |  |
-| Set Low Battery Threshold | → |  |  |
-| Get Height Limit | ↔ | GetMaxHeight() | MaxHeight stored in FlightData when it is received |
-| Get Low Battery Threshold | → |  |  |
-| Get Attitude (Limit?) | → |  |  |
-| Set Attitude (Limit?) | → |  |  |
+| ID (Hex) | Tello Function | Dir | Package Implementation | Comments |
+| -------- | -------------- | --- | ---------------------- | -------- |
+| 0x0001 | Connect  | → | ControlConnect(), ControlConnectDefault() | These funcs wait up to 3s for the Tello to respond |
+| 0x0002 | Connected | ← | ControlConnected() | (See comments for Connect) |
+| 0x0011 | Get SSID | ↔ | GetSSID() | SSID is stored in FlightData when it is received |
+| 0x0012 | Set SSID | → |  |  |
+| 0x0013 | Get SSID Password | → |  |  |
+| 0x0014 | Set SSID Password | → |  |  |
+| 0x0015 | Get Wifi Region | → |  |  |
+| 0x0016 | Set Wifi Region | → |  |  | 
+| 0x001a | Wifi Strength | ← | Y | Handled by package - stored in FlightData |
+| 0x0020 | Set Video Bit-Rate | → | SetVideoBitrate() |  |
+| 0x0021 | Set Video Dyn. Adj. Rate | → |  |  |
+| 0x0024 | Set EIS | → |  |  |
+| 0x0025 | Request Video Start | → | StartVideo() | Use VideoConnect() first, also see VideoDisconnect() |
+| 0x0028 | Get Video Bit-Rate | → |  |  |
+| 0x0030 | Take Picture | ↔ | TakePicture() | Can also be a response, see also NumPics() and SaveAllPics() |
+| 0x0031 | Set Video Aspect | → |  |  |
+| 0x0032 | Start Recording | → |  |  |
+| 0x0034 | Exposure Values | | | |
+| 0x0035 | Light Strength | ← | Y | Handled by package - stored in FlightData |
+| 0x0037 | Get JPEG Quality | → |  |  |
+| 0x0043 | Error 1 | ← |  |  |
+| 0x0044 | Error 2 | ← |  |  |
+| 0x0045 | Get Version | → |  |  |
+| 0x0046 | Set Date & Time | ↔ | Y | Handled internally by package |
+| 0x0047 | Get Activation Time | → |  |  |
+| 0x0049 | Get Loader Version | → |  |  |
+| 0x0050 | Set Sticks | → | UpdateSticks(), StartStickListener() | also, keepAlive sends these |
+| 0x0054 | Take Off | → | TakeOff() | Ignored on receipt |
+| 0x0055 | Land | ↔ | Land(), StopLanding() | Ignored on receipt |
+| 0x0056 | Flight Status | ← | GetFlightData(), StreamFlightData() |  |
+| 0x0058 | Set Height Limit | → |  |  |
+| 0x005c | Flip | → | Flip()  | Also see macro commands below eg. BackFlip() |
+| 0x005d | Throw Take Off | → | ThrowTakeOff() |  |
+| 0x005e | Palm Land | → | PalmLand() |  |
+| 0x0062 | File Size | ← | Y | Handled by package internally |
+| 0x0063 | File Data | ← | Y |  Handled by package internally |
+| 0x0064 | EOF | ← | Y | Handled by package internally |
+| 0x0080 | Start Smart Video | → |  |  |
+| 0x0081 | Get Smart Video Status | → |  |  |
+| 0x1050 | Log Header | ← |  | Currently ignored |
+| 0x1051 | Log Data | ← |  |  |
+| 0x1052 | Log Config. | ← |  |  |
+| 0x1053 | Bounce | → | Bounce() | Toggles the Bounce mode |
+| 0x1054 | Calibration | → |  |  |
+| 0x1055 | Set Low Battery Threshold | → |  |  |
+| 0x1056 | Get Height Limit | ↔ | GetMaxHeight() | MaxHeight stored in FlightData when it is received |
+| 0x0057 | Get Low Battery Threshold | → |  |  |
+| 0x0058 | Get Attitude (Limit?) | → |  |  |
+| 0x0059 | Set Attitude (Limit?) | → |  |  |
 
 ## Macro Commands
 
