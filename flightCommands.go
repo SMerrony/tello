@@ -123,7 +123,7 @@ func (tello *Tello) Forward(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: speed, Lx: 0, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: speed, Lx: tello.ctrlLx, Ly: tello.ctrlLy})
 }
 
 // Backward tells the drone to start moving Backward at a given speed between 0 and 100.
@@ -132,7 +132,7 @@ func (tello *Tello) Backward(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: -speed, Lx: 0, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: -speed, Lx: tello.ctrlLx, Ly: tello.ctrlLy})
 }
 
 // Left tells the drone to start moving Left at a given speed between 0 and 100.
@@ -141,7 +141,7 @@ func (tello *Tello) Left(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: -speed, Ry: 0, Lx: 0, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: -speed, Ry: tello.ctrlRy, Lx: tello.ctrlLx, Ly: tello.ctrlLy})
 }
 
 // Right tells the drone to start moving Right at a given speed between 0 and 100.
@@ -150,7 +150,7 @@ func (tello *Tello) Right(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: speed, Ry: 0, Lx: 0, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: speed, Ry: tello.ctrlRy, Lx: tello.ctrlLx, Ly: tello.ctrlLy})
 }
 
 // Up tells the drone to start moving Up at a given speed between 0 and 100.
@@ -159,7 +159,7 @@ func (tello *Tello) Up(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: 0, Ly: speed})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: tello.ctrlRy, Lx: tello.ctrlLx, Ly: speed})
 }
 
 // Down tells the drone to start moving Down at a given speed between 0 and 100.
@@ -168,7 +168,7 @@ func (tello *Tello) Down(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: 0, Ly: -speed})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: tello.ctrlRy, Lx: tello.ctrlLx, Ly: -speed})
 }
 
 // Clockwise tells the drone to start rotating Clockwise at a given speed between 0 and 100.
@@ -177,7 +177,7 @@ func (tello *Tello) Clockwise(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: speed, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: tello.ctrlRy, Lx: speed, Ly: tello.ctrlLy})
 }
 
 // TurnRight is an alias for Clockwise().
@@ -191,7 +191,7 @@ func (tello *Tello) Anticlockwise(pct int) {
 	if pct > 0 {
 		speed = int16(pct) * 327 // /100 * 32767
 	}
-	tello.UpdateSticks(StickMessage{Rx: 0, Ry: 0, Lx: -speed, Ly: 0})
+	tello.UpdateSticks(StickMessage{Rx: tello.ctrlRx, Ry: tello.ctrlRy, Lx: -speed, Ly: tello.ctrlLy})
 }
 
 // TurnLeft is an alias for Anticlockwise().
