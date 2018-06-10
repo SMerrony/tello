@@ -87,7 +87,7 @@ func (tello *Tello) GetVideoBitrate() {
 	defer tello.ctrlMu.Unlock()
 
 	tello.ctrlSeq++
-	pkt := newPacket(ptGet, msgGetVideoBitrate, tello.ctrlSeq, 0)
+	pkt := newPacket(ptGet, msgQueryVideoBitrate, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -107,6 +107,6 @@ func (tello *Tello) StartVideo() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
-	pkt := newPacket(ptData2, msgGetVideoSPSPPS, 0, 0)
+	pkt := newPacket(ptData2, msgQueryVideoSPSPPS, 0, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }

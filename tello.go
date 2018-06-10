@@ -157,7 +157,7 @@ func (tello *Tello) GetMaxHeight() {
 	defer tello.ctrlMu.Unlock()
 
 	tello.ctrlSeq++
-	pkt := newPacket(ptGet, msgGetHeightLimit, tello.ctrlSeq, 0)
+	pkt := newPacket(ptGet, msgQueryHeightLimit, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -167,7 +167,7 @@ func (tello *Tello) GetSSID() {
 	defer tello.ctrlMu.Unlock()
 
 	tello.ctrlSeq++
-	pkt := newPacket(ptGet, msgGetSSID, tello.ctrlSeq, 0)
+	pkt := newPacket(ptGet, msgQuerySSID, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -177,7 +177,7 @@ func (tello *Tello) GetVersion() {
 	defer tello.ctrlMu.Unlock()
 
 	tello.ctrlSeq++
-	pkt := newPacket(ptGet, msgGetVersion, tello.ctrlSeq, 0)
+	pkt := newPacket(ptGet, msgQueryVersion, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -344,22 +344,22 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.OverTemp = tmpFd.OverTemp
 
 					tello.fdMu.Unlock()
-				case msgGetHeightLimit:
+				case msgQueryHeightLimit:
 					//log.Printf("Max Height Limit recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.MaxHeight = uint8(pkt.payload[1])
 					tello.fdMu.Unlock()
-				case msgGetSSID:
+				case msgQuerySSID:
 					//log.Printf("SSID recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.SSID = string(pkt.payload[2:])
 					tello.fdMu.Unlock()
-				case msgGetVersion:
+				case msgQueryVersion:
 					//log.Printf("Version recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.Version = string(pkt.payload[1:])
 					tello.fdMu.Unlock()
-				case msgGetVideoBitrate:
+				case msgQueryVideoBitrate:
 					//log.Printf("Video Bitrate recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.VideoBitrate = VBR(pkt.payload[0])
