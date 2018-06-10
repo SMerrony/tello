@@ -25,7 +25,7 @@ A list of the currently-known Tello functions and whether or how this package ha
 | 0x0037 | Get JPEG Quality | → |  |  |
 | 0x0043 | Error 1 | ← |  |  |
 | 0x0044 | Error 2 | ← |  |  |
-| 0x0045 | Get Version | → |  |  |
+| 0x0045 | Get Version | ↔ | GetVersion() |  |
 | 0x0046 | Set Date & Time | ↔ | Y | Handled internally by package |
 | 0x0047 | Get Activation Time | → |  |  |
 | 0x0049 | Get Loader Version | → |  |  |

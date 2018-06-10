@@ -218,6 +218,7 @@ type FlightData struct {
 	SSID                     string
 	ThrowFlyTimer            int8
 	VerticalSpeed            int16
+	Version                  string
 	VideoBitrate             VBR
 	WifiInterference         uint8
 	WifiStrength             uint8

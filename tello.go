@@ -171,6 +171,16 @@ func (tello *Tello) GetSSID() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
+// GetVersion asks the Tello to send us its Version string
+func (tello *Tello) GetVersion() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptGet, msgGetVersion, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
 // StreamFlightData starts a Goroutine which sends FlightData to a channel.
 //   If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored. TODO.
 //   If asAvailable is false then updates are sent every periodMs
@@ -343,6 +353,11 @@ func (tello *Tello) controlResponseListener() {
 					//log.Printf("SSID recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.SSID = string(pkt.payload[2:])
+					tello.fdMu.Unlock()
+				case msgGetVersion:
+					//log.Printf("Version recieved: % x\n", pkt.payload)
+					tello.fdMu.Lock()
+					tello.fd.Version = string(pkt.payload[1:])
 					tello.fdMu.Unlock()
 				case msgGetVideoBitrate:
 					//log.Printf("Video Bitrate recieved: % x\n", pkt.payload)
