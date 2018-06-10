@@ -81,6 +81,16 @@ func (tello *Tello) videoResponseListener() {
 	}
 }
 
+// GetVideoBitrate requests the current video Mbps from the Tello.
+func (tello *Tello) GetVideoBitrate() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptGet, msgGetVideoBitrate, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
 // SetVideoBitrate ask the Tello to use the specified bitrate (or auto) for video encoding.
 func (tello *Tello) SetVideoBitrate(vbr VBR) {
 	tello.ctrlMu.Lock()

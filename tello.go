@@ -161,7 +161,7 @@ func (tello *Tello) GetMaxHeight() {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// GetSSID asks the Tello to send us its current Wifi AP ID
+// GetSSID asks the Tello to send us its current Wifi AP ID.
 func (tello *Tello) GetSSID() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -344,13 +344,18 @@ func (tello *Tello) controlResponseListener() {
 					tello.fdMu.Lock()
 					tello.fd.SSID = string(pkt.payload[2:])
 					tello.fdMu.Unlock()
+				case msgGetVideoBitrate:
+					//log.Printf("Video Bitrate recieved: % x\n", pkt.payload)
+					tello.fdMu.Lock()
+					tello.fd.VideoBitrate = VBR(pkt.payload[0])
+					tello.fdMu.Unlock()
 				case msgLightStrength:
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.LightStrength = uint8(pkt.payload[0])
 					tello.fdMu.Unlock()
 				case msgLogHeader:
-					log.Printf("Log Header received - Size: %d, Type: %d\n%s\n% x\n", pkt.size13, pkt.packetType, pkt.payload, pkt.payload)
+					//log.Printf("Log Header received - Size: %d, Type: %d\n%s\n% x\n", pkt.size13, pkt.packetType, pkt.payload, pkt.payload)
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()

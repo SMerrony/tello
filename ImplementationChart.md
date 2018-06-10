@@ -1,5 +1,5 @@
 # Tello® Package Implementation Chart
-A list of the currently-known Tello functions and whether the package handles them.
+A list of the currently-known Tello functions and whether or how this package handles them.
 
 | ID (Hex) | Tello Function | Dir | Package Implementation | Comments |
 | -------- | -------------- | --- | ---------------------- | -------- |
@@ -16,7 +16,7 @@ A list of the currently-known Tello functions and whether the package handles th
 | 0x0021 | Set Video Dyn. Adj. Rate | → |  |  |
 | 0x0024 | Set EIS | → |  |  |
 | 0x0025 | Request Video Start | → | StartVideo() | Use VideoConnect() first, also see VideoDisconnect() |
-| 0x0028 | Get Video Bit-Rate | → |  |  |
+| 0x0028 | Get Video Bit-Rate | ↔ | GetVideoBitrate() |  |
 | 0x0030 | Take Picture | ↔ | TakePicture() | Can also be a response, see also NumPics() and SaveAllPics() |
 | 0x0031 | Set Video Aspect | → |  |  |
 | 0x0032 | Start Recording | → |  |  |
@@ -49,9 +49,9 @@ A list of the currently-known Tello functions and whether the package handles th
 | 0x1054 | Calibration | → |  |  |
 | 0x1055 | Set Low Battery Threshold | → |  |  |
 | 0x1056 | Get Height Limit | ↔ | GetMaxHeight() | MaxHeight stored in FlightData when it is received |
-| 0x0057 | Get Low Battery Threshold | → |  |  |
-| 0x0058 | Get Attitude (Limit?) | → |  |  |
-| 0x0059 | Set Attitude (Limit?) | → |  |  |
+| 0x1057 | Get Low Battery Threshold | → |  |  |
+| 0x1058 | Get Attitude (Limit?) | → |  |  |
+| 0x1059 | Set Attitude (Limit?) | → |  |  |
 
 ## Macro Commands
 

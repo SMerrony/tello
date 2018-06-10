@@ -130,7 +130,7 @@ const (
 )
 
 // VBR is a Video Bit Rate, the int value is meaningless.
-type VBR int
+type VBR byte
 
 // VBR settings...
 const (
@@ -218,6 +218,7 @@ type FlightData struct {
 	SSID                     string
 	ThrowFlyTimer            int8
 	VerticalSpeed            int16
+	VideoBitrate             VBR
 	WifiInterference         uint8
 	WifiStrength             uint8
 	WindState                bool
