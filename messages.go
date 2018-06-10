@@ -207,6 +207,7 @@ type FlightData struct {
 	ImuCalibrationState      int8
 	ImuState                 bool
 	LightStrength            uint8
+	MaxHeight                uint8
 	NorthSpeed               int16
 	OnGround                 bool
 	OutageRecording          bool
@@ -214,6 +215,7 @@ type FlightData struct {
 	PowerState               bool
 	PressureState            bool
 	SmartVideoExitMode       int16
+	SSID                     string
 	ThrowFlyTimer            int8
 	VerticalSpeed            int16
 	WifiInterference         uint8
@@ -236,7 +238,7 @@ func bufferToPacket(buff []byte) (pkt packet) {
 	pkt.crc8 = buff[3]
 	pkt.fromDrone = (buff[4] & 0x80) == 1
 	pkt.toDrone = (buff[4] & 0x40) == 1
-	pkt.packetType = uint8((buff[4] << 2) >> 3)
+	pkt.packetType = uint8((buff[4] >> 3) & 0x07)
 	pkt.packetSubtype = uint8(buff[4] & 0x07)
 	pkt.messageID = (uint16(buff[6]) << 8) | uint16(buff[5])
 	pkt.sequence = (uint16(buff[8]) << 8) | uint16(buff[7])

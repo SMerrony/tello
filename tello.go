@@ -151,6 +151,26 @@ func (tello *Tello) GetFlightData() FlightData {
 	return rfd
 }
 
+// GetMaxHeight asks the Tello to send us its current maximum permitted height.
+func (tello *Tello) GetMaxHeight() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptGet, msgGetHeightLimit, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// GetSSID asks the Tello to send us its current Wifi AP ID
+func (tello *Tello) GetSSID() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptGet, msgGetSSID, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
 // StreamFlightData starts a Goroutine which sends FlightData to a channel.
 //   If asAvailable is true then updates are sent whenever fresh data arrives from the Tello and periodMs is ignored. TODO.
 //   If asAvailable is false then updates are sent every periodMs
@@ -314,13 +334,23 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.OverTemp = tmpFd.OverTemp
 
 					tello.fdMu.Unlock()
+				case msgGetHeightLimit:
+					//log.Printf("Max Height Limit recieved: % x\n", pkt.payload)
+					tello.fdMu.Lock()
+					tello.fd.MaxHeight = uint8(pkt.payload[1])
+					tello.fdMu.Unlock()
+				case msgGetSSID:
+					//log.Printf("SSID recieved: % x\n", pkt.payload)
+					tello.fdMu.Lock()
+					tello.fd.SSID = string(pkt.payload[2:])
+					tello.fdMu.Unlock()
 				case msgLightStrength:
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.LightStrength = uint8(pkt.payload[0])
 					tello.fdMu.Unlock()
 				case msgLogHeader:
-					log.Printf("Log Header received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
+					log.Printf("Log Header received - Size: %d, Type: %d\n%s\n% x\n", pkt.size13, pkt.packetType, pkt.payload, pkt.payload)
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()

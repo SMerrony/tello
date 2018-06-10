@@ -1,10 +1,11 @@
 # Tello® Package Implementation Chart
+A list of the currently-known Tello functions and whether the package handles them.
 
 | Tello Function | Dir | Package Implementation | Comments |
 | -------------- | --- | ---------------------- | -------- |
 | Connect  | → | ControlConnect(), ControlConnectDefault() | These funcs wait up to 3s for the Tello to respond |
 | Connected | ← | ControlConnected() | (See comments for Connect) |
-| Get SSID | → |  |  |
+| Get SSID | ↔ | GetSSID() | SSID is stored in FlightData when it is received |
 | Set SSID | → |  |  |
 | Get SSID Password | → |  |  |
 | Set SSID Password | → |  |  |
@@ -19,7 +20,7 @@
 | Take Picture | ↔ | TakePicture() | Can also be a response, see also NumPics() and SaveAllPics() |
 | Set Video Aspect | → |  |  |
 | Start Recording | → |  |  |
-| Exposure Values
+| Exposure Values | | | |
 | Light Strength | ← | Y | Handled by package - stored in FlightData |
 | Get JPEG Quality | → |  |  |
 | Error 1 | ← |  |  |
@@ -33,12 +34,12 @@
 | Land | ↔ | Land(), StopLanding() | Ignored on receipt |
 | Flight Status | ← | GetFlightData(), StreamFlightData() |  |
 | Set Height Limit | → |  |  |
-| Flip | → | Flip(),  |  |
+| Flip | → | Flip()  | Also see macro commands below eg. BackFlip() |
 | Throw Take Off | → | ThrowTakeOff() |  |
 | Palm Land | → | PalmLand() |  |
-| File Size | → | Y | Handled by package internally |
-| File Data | → | Y |  Handled by package internally |
-| EOF | → | Y | Handled by package internally |
+| File Size | ← | Y | Handled by package internally |
+| File Data | ← | Y |  Handled by package internally |
+| EOF | ← | Y | Handled by package internally |
 | Start Smart Video | → |  |  |
 | Get Smart Video Status | → |  |  |
 | Log Header | ← |  | Currently ignored |
@@ -47,7 +48,7 @@
 | Bounce | → | Bounce() | Toggles the Bounce mode |
 | Calibration | → |  |  |
 | Set Low Battery Threshold | → |  |  |
-| Get Height Limit | → |  |  |
+| Get Height Limit | ↔ | GetMaxHeight() | MaxHeight stored in FlightData when it is received |
 | Get Low Battery Threshold | → |  |  |
 | Get Attitude (Limit?) | → |  |  |
 | Set Attitude (Limit?) | → |  |  |
