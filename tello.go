@@ -151,6 +151,17 @@ func (tello *Tello) GetFlightData() FlightData {
 	return rfd
 }
 
+// GetLowBatteryThreshold requests the threshold from the Tello which is stored in
+// FlightData.LowBatteryThreshold as an integer percentage, i.e. from 0 to 100.
+func (tello *Tello) GetLowBatteryThreshold() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptGet, msgQueryLowBattThresh, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
 // GetMaxHeight asks the Tello to send us its current maximum permitted height.
 func (tello *Tello) GetMaxHeight() {
 	tello.ctrlMu.Lock()
@@ -332,7 +343,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.DroneHover = tmpFd.DroneHover
 					tello.fd.OutageRecording = tmpFd.OutageRecording
 					tello.fd.BatteryLow = tmpFd.BatteryLow
-					tello.fd.BatteryLower = tmpFd.BatteryLower
+					tello.fd.BatteryCritical = tmpFd.BatteryCritical
 					tello.fd.FactoryMode = tmpFd.FactoryMode
 					tello.fd.FlyMode = tmpFd.FlyMode
 					tello.fd.ThrowFlyTimer = tmpFd.ThrowFlyTimer
@@ -348,6 +359,10 @@ func (tello *Tello) controlResponseListener() {
 					//log.Printf("Max Height Limit recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.MaxHeight = uint8(pkt.payload[1])
+					tello.fdMu.Unlock()
+				case msgQueryLowBattThresh:
+					tello.fdMu.Lock()
+					tello.fd.LowBatteryThreshold = uint8(pkt.payload[1])
 					tello.fdMu.Unlock()
 				case msgQuerySSID:
 					//log.Printf("SSID recieved: % x\n", pkt.payload)

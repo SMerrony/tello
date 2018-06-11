@@ -188,7 +188,7 @@ type fileChunk struct {
 // at varying rates.
 type FlightData struct {
 	BatteryLow               bool
-	BatteryLower             bool
+	BatteryCritical          bool
 	BatteryPercentage        int8
 	BatteryState             bool
 	CameraState              uint8
@@ -212,6 +212,7 @@ type FlightData struct {
 	ImuCalibrationState      int8
 	ImuState                 bool
 	LightStrength            uint8
+	LowBatteryThreshold      uint8
 	MaxHeight                uint8
 	NorthSpeed               int16
 	OnGround                 bool
@@ -332,7 +333,7 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	fd.DroneHover = (pl[17] >> 3 & 1) == 1
 	fd.OutageRecording = (pl[17] >> 4 & 1) == 1
 	fd.BatteryLow = (pl[17] >> 5 & 1) == 1
-	fd.BatteryLower = (pl[17] >> 6 & 1) == 1
+	fd.BatteryCritical = (pl[17] >> 6 & 1) == 1
 	fd.FactoryMode = (pl[17] >> 7 & 1) == 1
 
 	fd.FlyMode = uint8(pl[18])

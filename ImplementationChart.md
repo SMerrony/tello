@@ -49,7 +49,7 @@ A list of the currently-known Tello functions and whether or how this package ha
 | 0x1054 | Calibration | → |  |  |
 | 0x1055 | Set Low Battery Threshold | → |  |  |
 | 0x1056 | Query Height Limit | ↔ | GetMaxHeight() | MaxHeight stored in FlightData when it is received |
-| 0x1057 | Query Low Battery Threshold | → |  |  |
+| 0x1057 | Query Low Battery Threshold | ↔ | GetLowBatteryThreshold() |  |
 | 0x1058 | Query Attitude (Limit?) | → |  |  |
 | 0x1059 | Set Attitude (Limit?) | → |  |  |
 
