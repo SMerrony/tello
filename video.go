@@ -110,3 +110,25 @@ func (tello *Tello) StartVideo() {
 	pkt := newPacket(ptData2, msgQueryVideoSPSPPS, 0, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
+
+// SetVideoNormal requests video format to be (native) ~4:3 ratio.
+func (tello *Tello) SetVideoNormal() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgSwitchPicVideo, tello.ctrlSeq, 1)
+	pkt.payload[0] = vmNormal
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// SetVideoWide requests video format to be (cropped) 16:9 ratio.
+func (tello *Tello) SetVideoWide() {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgSwitchPicVideo, tello.ctrlSeq, 1)
+	pkt.payload[0] = vmWide
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}

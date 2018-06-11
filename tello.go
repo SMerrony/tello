@@ -364,6 +364,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fdMu.Lock()
 					tello.fd.VideoBitrate = VBR(pkt.payload[0])
 					tello.fdMu.Unlock()
+					log.Printf("Got Video Bitrate: %d\n", tello.fd.VideoBitrate)
 				case msgLightStrength:
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
@@ -374,7 +375,7 @@ func (tello *Tello) controlResponseListener() {
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()
-
+				case msgSwitchPicVideo: // ignore
 				case msgWifiStrength:
 					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
@@ -383,8 +384,8 @@ func (tello *Tello) controlResponseListener() {
 					//log.Printf("Parsed Wifi Strength: %d, Interference: %d\n", tello.fd.WifiStrength, tello.fd.WifiInterference)
 					tello.fdMu.Unlock()
 				default:
-					log.Printf("Unknown message from Tello - ID: <%d>, Size %d, Type: %d\n",
-						pkt.messageID, pkt.size13, pkt.packetType)
+					log.Printf("Unknown message from Tello - ID: <%d>, Size %d, Type: %d\n% x\n",
+						pkt.messageID, pkt.size13, pkt.packetType, pkt.payload)
 				}
 			}
 		}

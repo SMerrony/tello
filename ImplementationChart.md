@@ -18,7 +18,7 @@ A list of the currently-known Tello functions and whether or how this package ha
 | 0x0025 | Request Video Start | → | StartVideo() | Use VideoConnect() first, also see VideoDisconnect() |
 | 0x0028 | Query Video Bit-Rate | ↔ | GetVideoBitrate() |  |
 | 0x0030 | Take Picture | ↔ | TakePicture() | Can also be a response, see also NumPics() and SaveAllPics() |
-| 0x0031 | Set Video Aspect | → |  |  |
+| 0x0031 | Set Video Aspect | ↔ | SetVideoNormal() & SetVideoWide() |  |
 | 0x0032 | Start Recording | → |  |  |
 | 0x0034 | Exposure Values | | | |
 | 0x0035 | Light Strength | ← | Y | Handled by package - stored in FlightData |

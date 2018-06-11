@@ -142,6 +142,11 @@ const (
 	Vbr4M              // Set the VBR to 4mbps
 )
 
+const (
+	vmNormal = 0
+	vmWide   = 1
+)
+
 // fileType is the type of file being sent to/from the drone
 type fileType byte
 
