@@ -143,6 +143,17 @@ func (tello *Tello) ControlConnected() (c bool) {
 	return c
 }
 
+// GetAttitude requests the current flight attitude data.
+// always seems to return 5 bytes 00 00 00 c8 41
+// func (tello *Tello) GetAttitude() {
+// 	tello.ctrlMu.Lock()
+// 	defer tello.ctrlMu.Unlock()
+
+// 	tello.ctrlSeq++
+// 	pkt := newPacket(ptGet, msgQueryAttitude, tello.ctrlSeq, 0)
+// 	tello.ctrlConn.Write(packetToBuffer(pkt))
+// }
+
 // GetFlightData returns the current known state of the Tello.
 func (tello *Tello) GetFlightData() FlightData {
 	tello.fdMu.RLock()
@@ -189,6 +200,18 @@ func (tello *Tello) GetVersion() {
 
 	tello.ctrlSeq++
 	pkt := newPacket(ptGet, msgQueryVersion, tello.ctrlSeq, 0)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// SetLowBatteryThreshold set the warning threshold to a percentage value (0-100).
+// N.B. It can take a few seconds for the Tello to change this value internally.
+func (tello *Tello) SetLowBatteryThreshold(thr uint8) {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgSetLowBattThresh, tello.ctrlSeq, 1)
+	pkt.payload[0] = thr
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
@@ -390,6 +413,7 @@ func (tello *Tello) controlResponseListener() {
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()
+				case msgSetLowBattThresh: // ignore for now (could be error return)
 				case msgSwitchPicVideo: // ignore
 				case msgWifiStrength:
 					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)

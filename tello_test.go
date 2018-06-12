@@ -123,3 +123,48 @@ func TestTakeoffLand(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
+
+func TestBatteryThresholdCmds(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+
+	drone.GetLowBatteryThreshold()
+	time.Sleep(3 * time.Second)
+	fd := drone.GetFlightData()
+	log.Printf("Battery threshold initially: %d\n", fd.LowBatteryThreshold)
+
+	drone.SetLowBatteryThreshold(16)
+	time.Sleep(3 * time.Second)
+	drone.GetLowBatteryThreshold()
+	time.Sleep(3 * time.Second)
+	fd = drone.GetFlightData()
+	log.Printf("Battery threshold now: %d\n", fd.LowBatteryThreshold)
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+	if fd.LowBatteryThreshold != 16 {
+		t.Errorf("Expected 16, got %d", fd.LowBatteryThreshold)
+	}
+}
+
+func TestGetSSID(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+
+	drone.GetSSID()
+	time.Sleep(time.Second)
+	fd := drone.GetFlightData()
+	log.Printf("SSID: %s\n", fd.SSID)
+
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+}
