@@ -50,7 +50,7 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort 
 	tello.videoStopChan = make(chan bool, 2)
 	tello.videoChan = make(chan []byte, 100)
 	go tello.videoResponseListener()
-	log.Println("Video connection setup complete")
+	//log.Println("Video connection setup complete")
 	return tello.videoChan, nil
 }
 

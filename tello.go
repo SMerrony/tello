@@ -259,7 +259,7 @@ func (tello *Tello) controlResponseListener() {
 		if tello.ctrlConnecting && n == 11 {
 			if bytes.ContainsAny(buff, "conn_ack:") {
 				// TODO handle returned video port?
-				log.Printf("Debug: conn_ack received, buffer len: %d\n", n)
+				//log.Printf("Debug: conn_ack received, buffer len: %d\n", n)
 				tello.ctrlMu.Lock()
 				tello.ctrlConnecting = false
 				tello.ctrlConnected = true
@@ -335,9 +335,7 @@ func (tello *Tello) controlResponseListener() {
 					if tello.fileTemp.accumSize == tello.fileTemp.expectedSize {
 						tello.sendFileAckPiece(1, thisChunk.fID, thisChunk.pieceNum)
 						tello.sendFileDone(thisChunk.fID, tello.fileTemp.accumSize)
-						log.Printf("Acknowledging file recieved - %d bytes\n", tello.fileTemp.accumSize)
 						tello.reassembleFile()
-						log.Printf("# files stored in memory: %d\n", tello.NumPics())
 					}
 				//case msgFileDone:
 				case msgFlightStatus:

@@ -1,4 +1,4 @@
-// tello project network_test.go
+// tello project tello_test.go
 
 // Copyright (C) 2018  Steve Merrony
 

@@ -24,7 +24,6 @@ package tello
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"sort"
 )
 
@@ -39,7 +38,7 @@ func (tello *Tello) TakePicture() (err error) {
 	tello.ctrlSeq++
 	pkt := newPacket(ptSet, msgDoTakePic, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
-	log.Println("Sent take picture request")
+	//log.Println("Sent take picture request")
 	return nil
 }
 
