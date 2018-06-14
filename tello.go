@@ -357,7 +357,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.ImuCalibrationState = tmpFd.ImuCalibrationState
 					tello.fd.BatteryPercentage = tmpFd.BatteryPercentage
 					tello.fd.DroneFlyTimeLeft = tmpFd.DroneFlyTimeLeft
-					tello.fd.DroneBatteryLeft = tmpFd.DroneBatteryLeft
+					tello.fd.BatteryMilliVolts = tmpFd.BatteryMilliVolts
 					tello.fd.Flying = tmpFd.Flying
 					tello.fd.OnGround = tmpFd.OnGround
 					tello.fd.EmOpen = tmpFd.EmOpen
