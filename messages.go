@@ -21,6 +21,11 @@
 
 package tello
 
+import (
+	"encoding/binary"
+	"math"
+)
+
 const msgHdr = 0xcc // 204
 
 // packet is our internal representation of the messages passed to/from the Tello
@@ -187,48 +192,50 @@ type fileChunk struct {
 // This data is not all sent at once from the drone, different fields may be updated
 // at varying rates.
 type FlightData struct {
-	BatteryLow               bool
-	BatteryCritical          bool
-	BatteryMilliVolts        int16
-	BatteryPercentage        int8
-	BatteryState             bool
-	CameraState              uint8
-	DownVisualState          bool
-	DroneFlyTimeLeft         int16
-	DroneHover               bool
-	EmOpen                   bool
-	EastSpeed                int16
-	ElectricalMachineryState uint8
-	FactoryMode              bool
-	Flying                   bool
-	FlyMode                  uint8
-	FlyTime                  int16
-	FrontIn                  bool
-	FrontLSC                 bool
-	FrontOut                 bool
-	GravityState             bool
-	GroundSpeed              int16
-	Height                   int16
-	ImuCalibrationState      int8
-	ImuState                 bool
-	LightStrength            uint8
-	LowBatteryThreshold      uint8
-	MaxHeight                uint8
-	NorthSpeed               int16
-	OnGround                 bool
-	OutageRecording          bool
-	OverTemp                 bool
-	PowerState               bool
-	PressureState            bool
-	SmartVideoExitMode       int16
-	SSID                     string
-	ThrowFlyTimer            int8
-	VerticalSpeed            int16
-	Version                  string
-	VideoBitrate             VBR
-	WifiInterference         uint8
-	WifiStrength             uint8
-	WindState                bool
+	BatteryLow                      bool
+	BatteryCritical                 bool
+	BatteryMilliVolts               int16
+	BatteryPercentage               int8
+	BatteryState                    bool
+	CameraState                     uint8
+	DownVisualState                 bool
+	DroneFlyTimeLeft                int16
+	DroneHover                      bool
+	EmOpen                          bool
+	EastSpeed                       int16
+	ElectricalMachineryState        uint8
+	FactoryMode                     bool
+	Flying                          bool
+	FlyMode                         uint8
+	FlyTime                         int16
+	FrontIn                         bool
+	FrontLSC                        bool
+	FrontOut                        bool
+	GravityState                    bool
+	GroundSpeed                     int16
+	Height                          int16
+	ImuCalibrationState             int8
+	ImuState                        bool
+	LightStrength                   uint8
+	LowBatteryThreshold             uint8
+	MaxHeight                       uint8
+	NorthSpeed                      int16
+	OnGround                        bool
+	OutageRecording                 bool
+	OverTemp                        bool
+	PositionX, PositionY, PositionZ float32
+	PowerState                      bool
+	PressureState                   bool
+	SmartVideoExitMode              int16
+	SSID                            string
+	ThrowFlyTimer                   int8
+	VelocityX, VelocityY, VelocityZ int16
+	VerticalSpeed                   int16
+	Version                         string
+	VideoBitrate                    VBR
+	WifiInterference                uint8
+	WifiStrength                    uint8
+	WindState                       bool
 }
 
 // StickMessage holds the signed 16-bit values of a joystick update.
@@ -236,6 +243,15 @@ type FlightData struct {
 type StickMessage struct {
 	Rx, Ry, Lx, Ly int16
 }
+
+const logRecordSeparator = 'U'
+
+// flight log message IDs
+const (
+	logRecNewMVO = 0x1de1
+	logRecIMU    = 0x00cf
+	// TODO - there are many more
+)
 
 // utility funcs for message handling
 
@@ -363,4 +379,8 @@ func payloadToFileChunk(pl []byte) (fc fileChunk) {
 	fc.chunkLen = uint16(pl[10]) + uint16(pl[11])<<8
 	fc.chunkData = pl[12:]
 	return fc
+}
+
+func bytesToFloat32(b []byte) (fl float32) {
+	return math.Float32frombits(binary.LittleEndian.Uint32(b))
 }

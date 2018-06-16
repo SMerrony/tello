@@ -69,15 +69,8 @@ func TestControlConnectDisconnect(t *testing.T) {
 	}
 	log.Println("Connected to Tello control channel")
 
-	// err = drone.VideoConnectDefault()
-	// if err != nil {
-	// 	log.Fatalf("Video connect failed with %v", err)
-	// }
-	// log.Println("Connected to Tello video channel")
-
 	time.Sleep(10 * time.Second)
 
-	//drone.VideoDisconnect()
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }

@@ -374,8 +374,19 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.FrontOut = tmpFd.FrontOut
 					tello.fd.FrontLSC = tmpFd.FrontLSC
 					tello.fd.OverTemp = tmpFd.OverTemp
-
 					tello.fdMu.Unlock()
+				case msgLightStrength:
+					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
+					tello.fdMu.Lock()
+					tello.fd.LightStrength = uint8(pkt.payload[0])
+					tello.fdMu.Unlock()
+				case msgLogConfig: // ignore for now
+				case msgLogHeader:
+					//log.Printf("Log Header received - Size: %d, Type: %d\n%s\n% x\n", pkt.size13, pkt.packetType, pkt.payload, pkt.payload)
+					tello.ackLogHeader(pkt.payload[0:2])
+				case msgLogData:
+					//log.Printf("Log messgae payload: % x\n", pkt.payload)
+					tello.parseLogPacket(pkt.payload)
 				case msgQueryHeightLimit:
 					//log.Printf("Max Height Limit recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
@@ -401,13 +412,6 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.VideoBitrate = VBR(pkt.payload[0])
 					tello.fdMu.Unlock()
 					log.Printf("Got Video Bitrate: %d\n", tello.fd.VideoBitrate)
-				case msgLightStrength:
-					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
-					tello.fdMu.Lock()
-					tello.fd.LightStrength = uint8(pkt.payload[0])
-					tello.fdMu.Unlock()
-				case msgLogHeader:
-					//log.Printf("Log Header received - Size: %d, Type: %d\n%s\n% x\n", pkt.size13, pkt.packetType, pkt.payload, pkt.payload)
 				case msgSetDateTime:
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()
