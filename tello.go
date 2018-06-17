@@ -345,7 +345,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.Height = tmpFd.Height
 					tello.fd.NorthSpeed = tmpFd.NorthSpeed
 					tello.fd.EastSpeed = tmpFd.EastSpeed
-					tello.fd.VerticalSpeed = tmpFd.VerticalSpeed
+					tello.fd.VerticalSpeed = -tmpFd.VerticalSpeed // seems to be inverted
 					tello.fd.FlyTime = tmpFd.FlyTime
 					tello.fd.ImuState = tmpFd.ImuState
 					tello.fd.PressureState = tmpFd.PressureState

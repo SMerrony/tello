@@ -21,8 +21,6 @@
 
 package tello
 
-import "log"
-
 func (tello *Tello) ackLogHeader(id []byte) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -65,16 +63,16 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			offset += 2
 			tello.fd.VelocityZ = int16(xorBuf[offset]) + int16(xorBuf[offset+1])<<8
 			offset += 2
-			tello.fd.PositionX = bytesToFloat32(xorBuf[offset : offset+4])
+			tello.fd.PositionX = bytesToFloat32(xorBuf[offset : offset+5])
 			offset += 4
-			tello.fd.PositionY = bytesToFloat32(xorBuf[offset : offset+4])
+			tello.fd.PositionY = bytesToFloat32(xorBuf[offset : offset+5])
 			offset += 4
-			tello.fd.PositionZ = bytesToFloat32(xorBuf[offset : offset+4])
+			tello.fd.PositionZ = bytesToFloat32(xorBuf[offset : offset+5])
 			tello.fdMu.Unlock()
 			// log.Printf("Decoded log velocities %d, %d, %d\n",
 			// 	tello.fd.VelocityX, tello.fd.VelocityY, tello.fd.VelocityZ)
-			log.Printf("Decoded log positions %f, %f, %f\n",
-				tello.fd.PositionX, tello.fd.PositionY, tello.fd.PositionZ)
+			// log.Printf("Decoded log positions %f, %f, %f\n",
+			// 	tello.fd.PositionX, tello.fd.PositionY, tello.fd.PositionZ)
 		case logRecIMU:
 			//log.Println("IMU rec found")
 		}

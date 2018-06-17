@@ -46,3 +46,20 @@ func TestPacketToBuffer(t *testing.T) {
 		t.Error("Buffer encoding incorrect")
 	}
 }
+
+func TestByteToFloat32(t *testing.T) {
+	var b = []byte{
+		0, 0, 0, 0,
+		128, 63, 0, 0, 112, 65,
+	}
+	var r float32
+	if r = bytesToFloat32(b[0:5]); r != 0 {
+		t.Errorf("Expected 0 got, %f\n", r)
+	}
+	if r = bytesToFloat32(b[2:7]); r != 1 {
+		t.Errorf("Expected 1 got, %f\n", r)
+	}
+	if r = bytesToFloat32(b[6:]); r != 15 {
+		t.Errorf("Expected 15 got, %f\n", r)
+	}
+}
