@@ -23,6 +23,29 @@ See [ImplementationChart.md](https://github.com/SMerrony/tello/blob/master/Imple
 
 An example application using this package is available at [telloterm](https://github.com/SMerrony/telloterm)
 
+Here is an example of just about the simplest use of the package...
+```
+package main
+import (
+  "log"
+  "time"
+  "github.com/SMerrony/tello"
+)
+
+func main() {
+  drone := new(Tello)
+  err := drone.ControlConnectDefault()
+  if err != nil {
+    log.Fatalf("%v", err) 
+  }
+
+  drone.TakeOff()
+  time.Sleep(10 * time.Second)
+  drone.Land()
+  drone.ControlDisconnect()
+}
+```
+
 ## Concepts
 ### Connection Types
 The drone provides two types of connection: a 'control' connection which handles all commands
