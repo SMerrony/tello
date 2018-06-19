@@ -41,40 +41,52 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			//log.Println("Error parsing log record (bad separator)")
 			break
 		}
-		recLen := int(uint8(data[pos+1]))
-		if data[pos+2] != 0 {
-			//log.Println("Error parsing log record (too long)")
-			break
-		}
-		logRecType := uint16(data[pos+3]) + uint16(data[pos+4])<<8
+		recLen := int(uint8(data[pos+1])) + int(uint8(data[pos+2]))<<8
+		logRecType := uint16(data[pos+4]) + uint16(data[pos+5])<<8
+		//log.Printf("Rec type %x\n", logRecType)
 		xorBuf := make([]byte, 256)
 		xorVal := data[pos+6]
 		switch logRecType {
 		case logRecNewMVO:
 			//log.Println("NewMOV rec found")
-			for i := 0; i < 18; i++ {
+			for i := 0; i < recLen; i++ {
 				xorBuf[i] = data[pos+i] ^ xorVal
 			}
-			offset := 12
+			offset := 10
+			flags := data[offset+76]
 			tello.fdMu.Lock()
-			tello.fd.VelocityX = int16(xorBuf[offset]) + int16(xorBuf[offset+1])<<8
-			offset += 2
-			tello.fd.VelocityY = int16(xorBuf[offset]) + int16(xorBuf[offset+1])<<8
-			offset += 2
-			tello.fd.VelocityZ = int16(xorBuf[offset]) + int16(xorBuf[offset+1])<<8
-			offset += 2
-			tello.fd.PositionX = bytesToFloat32(xorBuf[offset : offset+5])
-			offset += 4
-			tello.fd.PositionY = bytesToFloat32(xorBuf[offset : offset+5])
-			offset += 4
-			tello.fd.PositionZ = bytesToFloat32(xorBuf[offset : offset+5])
+			if flags&logValidVelX != 0 {
+				tello.fd.MVO.VelocityX = (int16(xorBuf[offset+2]) + int16(xorBuf[offset+3])<<8)
+			}
+			if flags&logValidVelY != 0 {
+				tello.fd.MVO.VelocityY = (int16(xorBuf[offset+4]) + int16(xorBuf[offset+5])<<8)
+			}
+			if flags&logValidVelZ != 0 {
+				tello.fd.MVO.VelocityZ = -(int16(xorBuf[offset+6]) + int16(xorBuf[offset+7])<<8)
+			}
+			//if flags&logValidPosX != 0 {
+			tello.fd.MVO.PositionX = bytesToFloat32(xorBuf[offset+8 : offset+13])
+			//}
+			if flags&logValidPosY != 0 {
+				tello.fd.MVO.PositionY = bytesToFloat32(xorBuf[offset+12 : offset+17])
+			}
+			if flags&logValidPosZ != 0 {
+				tello.fd.MVO.PositionZ = bytesToFloat32(xorBuf[offset+16 : offset+21])
+			}
 			tello.fdMu.Unlock()
-			// log.Printf("Decoded log velocities %d, %d, %d\n",
-			// 	tello.fd.VelocityX, tello.fd.VelocityY, tello.fd.VelocityZ)
-			// log.Printf("Decoded log positions %f, %f, %f\n",
-			// 	tello.fd.PositionX, tello.fd.PositionY, tello.fd.PositionZ)
 		case logRecIMU:
 			//log.Println("IMU rec found")
+			for i := 0; i < recLen; i++ {
+				xorBuf[i] = data[pos+i] ^ xorVal
+			}
+			offset := 10
+			tello.fdMu.Lock()
+			tello.fd.IMU.QuaternionW = bytesToFloat32(xorBuf[offset+48 : offset+53])
+			tello.fd.IMU.QuaternionX = bytesToFloat32(xorBuf[offset+52 : offset+57])
+			tello.fd.IMU.QuaternionY = bytesToFloat32(xorBuf[offset+56 : offset+61])
+			tello.fd.IMU.QuaternionZ = bytesToFloat32(xorBuf[offset+60 : offset+65])
+			tello.fd.IMU.Temperature = (int16(xorBuf[offset+106]) + int16(xorBuf[offset+107])<<8) / 100
+			tello.fdMu.Unlock()
 		}
 		pos += recLen
 	}

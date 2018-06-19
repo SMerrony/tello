@@ -192,50 +192,62 @@ type fileChunk struct {
 // This data is not all sent at once from the drone, different fields may be updated
 // at varying rates.
 type FlightData struct {
-	BatteryLow                      bool
-	BatteryCritical                 bool
-	BatteryMilliVolts               int16
-	BatteryPercentage               int8
-	BatteryState                    bool
-	CameraState                     uint8
-	DownVisualState                 bool
-	DroneFlyTimeLeft                int16
-	DroneHover                      bool
-	EmOpen                          bool
-	EastSpeed                       int16
-	ElectricalMachineryState        uint8
-	FactoryMode                     bool
-	Flying                          bool
-	FlyMode                         uint8
-	FlyTime                         int16
-	FrontIn                         bool
-	FrontLSC                        bool
-	FrontOut                        bool
-	GravityState                    bool
-	GroundSpeed                     int16
-	Height                          int16
-	ImuCalibrationState             int8
-	ImuState                        bool
-	LightStrength                   uint8
-	LowBatteryThreshold             uint8
-	MaxHeight                       uint8
-	NorthSpeed                      int16
-	OnGround                        bool
-	OutageRecording                 bool
-	OverTemp                        bool
+	BatteryLow               bool
+	BatteryCritical          bool
+	BatteryMilliVolts        int16
+	BatteryPercentage        int8
+	BatteryState             bool
+	CameraState              uint8
+	DownVisualState          bool
+	DroneFlyTimeLeft         int16
+	DroneHover               bool
+	EmOpen                   bool
+	EastSpeed                int16
+	ElectricalMachineryState uint8
+	FactoryMode              bool
+	Flying                   bool
+	FlyMode                  uint8
+	FlyTime                  int16
+	FrontIn                  bool
+	FrontLSC                 bool
+	FrontOut                 bool
+	GravityState             bool
+	GroundSpeed              int16
+	Height                   int16
+	IMU                      IMUData
+	ImuCalibrationState      int8
+	ImuState                 bool
+	LightStrength            uint8
+	LowBatteryThreshold      uint8
+	MaxHeight                uint8
+	MVO                      MVOData
+	NorthSpeed               int16
+	OnGround                 bool
+	OutageRecording          bool
+	OverTemp                 bool
+	PowerState               bool
+	PressureState            bool
+	SmartVideoExitMode       int16
+	SSID                     string
+	ThrowFlyTimer            int8
+	VerticalSpeed            int16
+	Version                  string
+	VideoBitrate             VBR
+	WifiInterference         uint8
+	WifiStrength             uint8
+	WindState                bool
+}
+
+// MVOData comes from the flight log messages
+type MVOData struct {
 	PositionX, PositionY, PositionZ float32
-	PowerState                      bool
-	PressureState                   bool
-	SmartVideoExitMode              int16
-	SSID                            string
-	ThrowFlyTimer                   int8
 	VelocityX, VelocityY, VelocityZ int16
-	VerticalSpeed                   int16
-	Version                         string
-	VideoBitrate                    VBR
-	WifiInterference                uint8
-	WifiStrength                    uint8
-	WindState                       bool
+}
+
+// IMUData comes from the flight log messages
+type IMUData struct {
+	QuaternionW, QuaternionX, QuaternionY, QuaternionZ float32
+	Temperature                                        int16
 }
 
 // StickMessage holds the signed 16-bit values of a joystick update.
@@ -248,9 +260,18 @@ const logRecordSeparator = 'U'
 
 // flight log message IDs
 const (
-	logRecNewMVO = 0x1de1
-	logRecIMU    = 0x00cf
+	logRecNewMVO = 0x001d
+	logRecIMU    = 0x0800
 	// TODO - there are many more
+)
+
+const (
+	logValidVelX = 0x01
+	logValidVelY = 0x02
+	logValidVelZ = 0x04
+	logValidPosX = 0x10
+	logValidPosY = 0x20
+	logValidPosZ = 0x40
 )
 
 // utility funcs for message handling

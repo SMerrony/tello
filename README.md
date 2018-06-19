@@ -16,6 +16,7 @@ The following features have been implemented...
   * Drone built-in flight commands, eg. Takeoff(), PalmLand()
   * Macro-level flight control, eg. Forward(), Up()
   * Video stream support
+  * Enriched flight-data (some log data is added)
   * Picture taking/saving support 
   * Multiple drone support - Untested
 
