@@ -2,7 +2,7 @@
 
 Disclaimer
 
-Tello is a registered trademark of Ryze Tech.  The author of this package is in no way affiliated with Ryze, DJI, or Intel.
+Tello is a registered trademark of Ryze Tech.  The author(s) of this package is/are in no way affiliated with Ryze, DJI, or Intel.
 The package has been developed by gathering together information from a variety of sources on the Internet
 (especially the generous contributors at  https://tellopilots.com), and by examining data packets sent to/from the Tello.
 The package will probably be extended as more knowledge of the drone's protocol is obtained.
@@ -16,10 +16,11 @@ The following features have been implemented...
   * Stick-based flight control, ie. for joystick, game-, or flight-controller
   * Drone built-in flight commands, eg. Takeoff(), PalmLand()
   * Macro-level flight control, eg. Forward(), Up()
+  * Enriched flight data (some log data is added)
   * Video stream support
   * Picture taking/saving
   * Multiple drone support - Untested
-An example application using this package is available at http://github.com/SMerrony/tello-desktop/cmd/tello-package
+An example application using this package is available at http://github.com/SMerrony/telloterm
 
 Concepts
 
