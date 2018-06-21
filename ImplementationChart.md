@@ -66,3 +66,4 @@ This should be consulted alongside the GoDoc package documentation.  See https:/
 | |Clockwise(), Anticlockwise() | aliases: TurnLeft(), TurnRight(), CounterClockwise() - Start turning at given percentage of max rate |
 | SetSportsMode() | Also SetFastMode(), SetSlowMode() |
 | Flip() | Also BackFlip(), BackLeftFlip(), BackRightFlip(), ForwardFlip(), etc. |
+| StartSmartVideo(), StopSmartVideo() | eg. 360 rotation, circle, up-and-out |
