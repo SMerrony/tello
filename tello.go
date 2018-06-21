@@ -342,38 +342,38 @@ func (tello *Tello) controlResponseListener() {
 					tmpFd := payloadToFlightData(pkt.payload)
 					tello.fdMu.Lock()
 					// not all fields are sent...
-					tello.fd.Height = tmpFd.Height
-					tello.fd.NorthSpeed = tmpFd.NorthSpeed
-					tello.fd.EastSpeed = tmpFd.EastSpeed
-					tello.fd.VerticalSpeed = -tmpFd.VerticalSpeed // seems to be inverted
-					tello.fd.FlyTime = tmpFd.FlyTime
-					tello.fd.ImuState = tmpFd.ImuState
-					tello.fd.PressureState = tmpFd.PressureState
-					tello.fd.DownVisualState = tmpFd.DownVisualState
-					tello.fd.PowerState = tmpFd.PowerState
-					tello.fd.BatteryState = tmpFd.BatteryState
-					tello.fd.GravityState = tmpFd.GravityState
-					tello.fd.WindState = tmpFd.WindState
-					tello.fd.ImuCalibrationState = tmpFd.ImuCalibrationState
-					tello.fd.BatteryPercentage = tmpFd.BatteryPercentage
-					tello.fd.DroneFlyTimeLeft = tmpFd.DroneFlyTimeLeft
-					tello.fd.BatteryMilliVolts = tmpFd.BatteryMilliVolts
-					tello.fd.Flying = tmpFd.Flying
-					tello.fd.OnGround = tmpFd.OnGround
-					tello.fd.EmOpen = tmpFd.EmOpen
-					tello.fd.DroneHover = tmpFd.DroneHover
-					tello.fd.OutageRecording = tmpFd.OutageRecording
-					tello.fd.BatteryLow = tmpFd.BatteryLow
 					tello.fd.BatteryCritical = tmpFd.BatteryCritical
-					tello.fd.FactoryMode = tmpFd.FactoryMode
-					tello.fd.FlyMode = tmpFd.FlyMode
-					tello.fd.ThrowFlyTimer = tmpFd.ThrowFlyTimer
+					tello.fd.BatteryLow = tmpFd.BatteryLow
+					tello.fd.BatteryMilliVolts = tmpFd.BatteryMilliVolts
+					tello.fd.BatteryPercentage = tmpFd.BatteryPercentage
+					tello.fd.BatteryState = tmpFd.BatteryState
 					tello.fd.CameraState = tmpFd.CameraState
+					tello.fd.DownVisualState = tmpFd.DownVisualState
+					tello.fd.DroneFlyTimeLeft = tmpFd.DroneFlyTimeLeft
+					tello.fd.DroneHover = tmpFd.DroneHover
+					tello.fd.EastSpeed = tmpFd.EastSpeed
 					tello.fd.ElectricalMachineryState = tmpFd.ElectricalMachineryState
+					tello.fd.EmOpen = tmpFd.EmOpen
+					tello.fd.FactoryMode = tmpFd.FactoryMode
+					tello.fd.Flying = tmpFd.Flying
+					tello.fd.FlyMode = tmpFd.FlyMode
+					tello.fd.FlyTime = tmpFd.FlyTime
 					tello.fd.FrontIn = tmpFd.FrontIn
-					tello.fd.FrontOut = tmpFd.FrontOut
 					tello.fd.FrontLSC = tmpFd.FrontLSC
+					tello.fd.FrontOut = tmpFd.FrontOut
+					tello.fd.GravityState = tmpFd.GravityState
+					tello.fd.Height = tmpFd.Height
+					tello.fd.ImuCalibrationState = tmpFd.ImuCalibrationState
+					tello.fd.ImuState = tmpFd.ImuState
+					tello.fd.NorthSpeed = tmpFd.NorthSpeed
+					tello.fd.OnGround = tmpFd.OnGround
+					tello.fd.OutageRecording = tmpFd.OutageRecording
 					tello.fd.OverTemp = tmpFd.OverTemp
+					tello.fd.PowerState = tmpFd.PowerState
+					tello.fd.PressureState = tmpFd.PressureState
+					tello.fd.ThrowFlyTimer = tmpFd.ThrowFlyTimer
+					tello.fd.VerticalSpeed = -tmpFd.VerticalSpeed // seems to be inverted
+					tello.fd.WindState = tmpFd.WindState
 					tello.fdMu.Unlock()
 				case msgLightStrength:
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
@@ -416,6 +416,7 @@ func (tello *Tello) controlResponseListener() {
 					//log.Println("DateTime request received from Tello")
 					tello.sendDateTime()
 				case msgSetLowBattThresh: // ignore for now (could be error return)
+				case msgSmartVideoStatus: // ignore
 				case msgSwitchPicVideo: // ignore
 				case msgWifiStrength:
 					// log.Printf("Wifi strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)

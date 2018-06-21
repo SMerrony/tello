@@ -42,8 +42,8 @@ This should be consulted alongside the GoDoc package documentation.  See https:/
 | 0x0062 | File Size | ← | Y | Handled internally by package |
 | 0x0063 | File Data | ← | Y |  Handled internally by package |
 | 0x0064 | EOF | ← | Y | Handled internally by package |
-| 0x0080 | Start Smart Video | → |  |  |
-| 0x0081 | Query Smart Video Status | → |  |  |
+| 0x0080 | Start Smart Video | → | StartSmartVideo(), StopSmartVideo() |  |
+| 0x0081 | Smart Video Status | ← |  |  |
 | 0x1050 | Log Header | ↔ |  | Handled internally by package |
 | 0x1051 | Log Data | ← |  | Some MOV and IMU data are captured and added to FlightData |
 | 0x1052 | Log Config. | ← |  |  |

@@ -104,6 +104,28 @@ func (tello *Tello) Flip(dir FlipType) {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
+// StartSmartVideo begins a preprogrammed 'smart video' flight action.
+func (tello *Tello) StartSmartVideo(cmd SvCmd) {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgDoSmartVideo, tello.ctrlSeq, 1)
+	pkt.payload[0] = byte(cmd) | 0x01
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
+// StopSmartVideo begins a preprogrammed 'smart video' flight action.
+func (tello *Tello) StopSmartVideo(cmd SvCmd) {
+	tello.ctrlMu.Lock()
+	defer tello.ctrlMu.Unlock()
+
+	tello.ctrlSeq++
+	pkt := newPacket(ptSet, msgDoSmartVideo, tello.ctrlSeq, 1)
+	pkt.payload[0] = byte(cmd)
+	tello.ctrlConn.Write(packetToBuffer(pkt))
+}
+
 // *** The following are 'macro' commands which are here purely
 // *** to make the Tello easier to use in some circumstances.
 

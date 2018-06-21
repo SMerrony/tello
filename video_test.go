@@ -32,16 +32,38 @@ func TestVideoBitrate(t *testing.T) {
 
 	err := drone.ControlConnectDefault()
 	if err != nil {
-		log.Fatalf("CCD failed with error %v", err)
+		log.Fatalf("ControlConnect failed with error %v", err)
 	}
 	log.Println("Connected to Tello control channel")
+
+	log.Println("Testing without video connection...")
 
 	drone.GetVideoBitrate()
 	time.Sleep(3 * time.Second)
 	fd := drone.GetFlightData()
-	log.Printf("Video bitrate now: %d\n", fd.VideoBitrate)
+	log.Printf("Initial bitrate: %d\n", fd.VideoBitrate)
 
 	drone.SetVideoBitrate(Vbr1M5)
+	log.Println("Attempt to set to 1M5mbps")
+
+	time.Sleep(3 * time.Second)
+	fd = drone.GetFlightData()
+	log.Printf("Video bitrate now: %d\n", fd.VideoBitrate)
+
+	log.Println("Testing with video connection...")
+
+	_, err = drone.VideoConnectDefault()
+	if err != nil {
+		log.Fatalf("VideoConnect failed with error %v", err)
+	}
+
+	drone.GetVideoBitrate()
+	time.Sleep(3 * time.Second)
+	fd = drone.GetFlightData()
+	log.Printf("Video bitrate now: %d\n", fd.VideoBitrate)
+
+	drone.SetVideoBitrate(Vbr2M)
+	log.Println("Attempt to set to 2mbps")
 
 	time.Sleep(3 * time.Second)
 	fd = drone.GetFlightData()

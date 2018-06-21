@@ -95,7 +95,7 @@ const (
 	msgFileData            = 0x0063 // 99
 	msgFileDone            = 0x0064 // 100
 	msgDoSmartVideo        = 0x0080 // 128
-	msgQuerySmartVideo     = 0x0081 // 129
+	msgSmartVideoStatus    = 0x0081 // 129
 	msgLogHeader           = 0x1050 // 4176
 	msgLogData             = 0x1051 // 4177
 	msgLogConfig           = 0x1052 // 4178
@@ -123,15 +123,16 @@ const (
 	FlipForwardRight
 )
 
-// SvCmd is Smart Video command.
-type SvCmd int
+// SvCmd is Smart Video flight command.
+type SvCmd byte
 
-// Smart Video commands...
+// Smart Video flight commands...
 const (
-	SvStop   SvCmd = iota // Stop any Smart Video command in progress.
-	Sv360                 // Slowly rotate around 360 degrees.
-	SvCircle              // Circle around a point in front of the drone.
-	SvUpOut               // Perform the 'Up and Out' manouvre.
+	// SvStop   SvCmd = 0 // Stop any Smart Video command in progress.
+	// SvStart        = 1
+	Sv360    = 1 << 2 // Slowly rotate around 360 degrees.
+	SvCircle = 2 << 2 // Circle around a point in front of the drone.
+	SvUpOut  = 3 << 2 // Perform the 'Up and Out' manouvre.
 )
 
 // VBR is a Video Bit Rate, the int value is meaningless.
