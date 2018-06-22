@@ -64,9 +64,9 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			if flags&logValidVelZ != 0 {
 				tello.fd.MVO.VelocityZ = -(int16(xorBuf[offset+6]) + int16(xorBuf[offset+7])<<8)
 			}
-			//if flags&logValidPosX != 0 {
-			tello.fd.MVO.PositionX = bytesToFloat32(xorBuf[offset+8 : offset+13])
-			//}
+			if flags&logValidPosX != 0 {
+				tello.fd.MVO.PositionX = bytesToFloat32(xorBuf[offset+8 : offset+13])
+			}
 			if flags&logValidPosY != 0 {
 				tello.fd.MVO.PositionY = bytesToFloat32(xorBuf[offset+12 : offset+17])
 			}
