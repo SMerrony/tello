@@ -29,20 +29,15 @@ import (
 
 const (
 	defaultTelloVideoPort = 6038
-	defaultLocalVideoPort = 8801
 )
 
 // VideoConnect attempts to connect to a Tello video channel at the provided addr and starts a listener.
 // A channel of raw H.264 video frames is returned along with any error.
-func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort int) (<-chan []byte, error) {
+func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int) (<-chan []byte, error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
 		return nil, err
 	}
-	// localAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(localUDPPort))
-	// if err != nil {
-	// 	return err
-	// }
 	tello.videoConn, err = net.ListenUDP("udp", droneAddr)
 	if err != nil {
 		return nil, err
@@ -57,7 +52,7 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int, localUDPPort 
 // VideoConnectDefault attempts to connect to a Tello video channel using default addresses, then starts a listener.
 // A channel of raw H.264 video frames is returned along with any error.
 func (tello *Tello) VideoConnectDefault() (<-chan []byte, error) {
-	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort, defaultLocalVideoPort)
+	return tello.VideoConnect(defaultTelloAddr, defaultTelloVideoPort)
 }
 
 // VideoDisconnect closes the connection to the video channel.
