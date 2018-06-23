@@ -43,8 +43,8 @@ func TestVideoBitrate(t *testing.T) {
 	fd := drone.GetFlightData()
 	log.Printf("Initial bitrate: %d\n", fd.VideoBitrate)
 
-	drone.SetVideoBitrate(Vbr1M5)
-	log.Println("Attempt to set to 1M5mbps")
+	drone.SetVideoBitrate(Vbr4M)
+	log.Println("Attempt to set to 4mbps")
 
 	time.Sleep(3 * time.Second)
 	fd = drone.GetFlightData()
@@ -62,8 +62,8 @@ func TestVideoBitrate(t *testing.T) {
 	fd = drone.GetFlightData()
 	log.Printf("Video bitrate now: %d\n", fd.VideoBitrate)
 
-	drone.SetVideoBitrate(Vbr2M)
-	log.Println("Attempt to set to 2mbps")
+	drone.SetVideoBitrate(Vbr4M)
+	log.Println("Attempt to set to 4mbps")
 
 	time.Sleep(3 * time.Second)
 	fd = drone.GetFlightData()

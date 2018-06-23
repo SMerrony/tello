@@ -42,3 +42,23 @@ func TestAckHeader(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
+
+func TestQuatToEulerDeg(t *testing.T) {
+	p, r, y := QuatToEulerDeg(0, 0, 0, 1) // straight ahead
+	log.Printf("p: %d, r: %d, y: %d\n", p, r, y)
+	if p != 0 || r != 0 || y != 0 {
+		t.Errorf("p: %d, r: %d, y: %d\n", p, r, y)
+	}
+
+	p, r, y = QuatToEulerDeg(0, 0.7071, 0, 0.7071) // 90 deg about  y axis
+	log.Printf("p: %d, r: %d, y: %d\n", p, r, y)
+	if p != 90 || r != 0 || y != 0 {
+		t.Errorf("p: %d, r: %d, y: %d\n", p, r, y)
+	}
+
+	p, r, y = QuatToEulerDeg(0, 0, 1, 1) // roll 117 deg
+	log.Printf("p: %d, r: %d, y: %d\n", p, r, y)
+	if p != 0 || r != 0 || y != 117 {
+		t.Errorf("p: %d, r: %d, y: %d\n", p, r, y)
+	}
+}

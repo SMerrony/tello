@@ -407,7 +407,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.Version = string(pkt.payload[1:])
 					tello.fdMu.Unlock()
 				case msgQueryVideoBitrate:
-					//log.Printf("Video Bitrate recieved: % x\n", pkt.payload)
+					log.Printf("Video Bitrate recieved: % x\n", pkt.payload)
 					tello.fdMu.Lock()
 					tello.fd.VideoBitrate = VBR(pkt.payload[0])
 					tello.fdMu.Unlock()

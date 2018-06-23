@@ -21,6 +21,8 @@
 
 package tello
 
+import "math"
+
 func (tello *Tello) ackLogHeader(id []byte) {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
@@ -90,4 +92,31 @@ func (tello *Tello) parseLogPacket(data []byte) {
 		}
 		pos += recLen
 	}
+}
+
+// QuatToEulerDeg converts a quaternion set into pitch, roll & yaw expressed in degrees
+func QuatToEulerDeg(qX, qY, qZ, qW float64) (pitch, roll, yaw int) {
+	const degree = math.Pi / 180.0
+	sqX := qX * qX
+	sqY := qY * qY
+	sqZ := qZ * qZ
+
+	sinR := 2.0 * (qW*qX + qY*qZ)
+	cosR := 1 - 2*(sqX+sqY)
+	roll = int(math.Round(math.Atan2(sinR, cosR) / degree))
+
+	sinP := 2.0 * (qW*qY - qZ*qX)
+	if sinP > 1.0 {
+		sinP = 1.0
+	}
+	if sinP < -1.0 {
+		sinP = -1
+	}
+	pitch = int(math.Round(math.Asin(sinP) / degree))
+
+	sinY := 2.0 * (qW*qZ + qX*qY)
+	cosY := 1.0 - 2*(sqY+sqZ)
+	yaw = int(math.Round(math.Atan2(sinY, cosY) / degree))
+
+	return pitch, roll, yaw
 }
