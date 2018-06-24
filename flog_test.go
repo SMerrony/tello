@@ -62,3 +62,23 @@ func TestQuatToEulerDeg(t *testing.T) {
 		t.Errorf("p: %d, r: %d, y: %d\n", p, r, y)
 	}
 }
+
+func TestQuatToYawDeg(t *testing.T) {
+	y := quatToYawDeg(0, 0, 0, 1) // straight ahead
+	log.Printf("y: %d\n", y)
+	if y != 0 {
+		t.Errorf("y: %d\n", y)
+	}
+
+	y = quatToYawDeg(0, 0.7071, 0, 0.7071) // 90 deg about  y axis
+	log.Printf("y: %d\n", y)
+	if y != 0 {
+		t.Errorf("y: %d\n", y)
+	}
+
+	y = quatToYawDeg(0, 0, 1, 1) // roll 117 deg
+	log.Printf("y: %d\n", y)
+	if y != 117 {
+		t.Errorf("y: %d\n", y)
+	}
+}
