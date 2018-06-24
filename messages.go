@@ -247,8 +247,10 @@ type MVOData struct {
 
 // IMUData comes from the flight log messages
 type IMUData struct {
-	QuaternionW, QuaternionX, QuaternionY, QuaternionZ float32
-	Temperature                                        int16
+	QuaternionW,
+	QuaternionX, QuaternionY, QuaternionZ float32
+	Temperature int16
+	Yaw         int16 // derived from Quat fields, -180 > degrees > +180
 }
 
 // StickMessage holds the signed 16-bit values of a joystick update.

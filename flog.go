@@ -88,6 +88,10 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			tello.fd.IMU.QuaternionY = bytesToFloat32(xorBuf[offset+56 : offset+61])
 			tello.fd.IMU.QuaternionZ = bytesToFloat32(xorBuf[offset+60 : offset+65])
 			tello.fd.IMU.Temperature = (int16(xorBuf[offset+106]) + int16(xorBuf[offset+107])<<8) / 100
+			tello.fd.IMU.Yaw = quatToYawDeg(tello.fd.IMU.QuaternionX,
+				tello.fd.IMU.QuaternionY,
+				tello.fd.IMU.QuaternionZ,
+				tello.fd.IMU.QuaternionW)
 			tello.fdMu.Unlock()
 		}
 		pos += recLen
@@ -95,17 +99,21 @@ func (tello *Tello) parseLogPacket(data []byte) {
 }
 
 // QuatToEulerDeg converts a quaternion set into pitch, roll & yaw expressed in degrees
-func QuatToEulerDeg(qX, qY, qZ, qW float64) (pitch, roll, yaw int) {
+func QuatToEulerDeg(qX, qY, qZ, qW float32) (pitch, roll, yaw int) {
 	const degree = math.Pi / 180.0
-	sqX := qX * qX
-	sqY := qY * qY
-	sqZ := qZ * qZ
+	qqX := float64(qX)
+	qqY := float64(qY)
+	qqZ := float64(qZ)
+	qqW := float64(qW)
+	sqX := qqX * qqX
+	sqY := qqY * qqY
+	sqZ := qqZ * qqZ
 
-	sinR := 2.0 * (qW*qX + qY*qZ)
+	sinR := 2.0 * (qqW*qqX + qqY*qqZ)
 	cosR := 1 - 2*(sqX+sqY)
 	roll = int(math.Round(math.Atan2(sinR, cosR) / degree))
 
-	sinP := 2.0 * (qW*qY - qZ*qX)
+	sinP := 2.0 * (qqW*qqY - qqZ*qqX)
 	if sinP > 1.0 {
 		sinP = 1.0
 	}
@@ -114,9 +122,26 @@ func QuatToEulerDeg(qX, qY, qZ, qW float64) (pitch, roll, yaw int) {
 	}
 	pitch = int(math.Round(math.Asin(sinP) / degree))
 
-	sinY := 2.0 * (qW*qZ + qX*qY)
+	sinY := 2.0 * (qqW*qqZ + qqX*qqY)
 	cosY := 1.0 - 2*(sqY+sqZ)
 	yaw = int(math.Round(math.Atan2(sinY, cosY) / degree))
 
 	return pitch, roll, yaw
+}
+
+// faster func just for getting yaw internally
+func quatToYawDeg(qX, qY, qZ, qW float32) (yaw int16) {
+	const degree = math.Pi / 180.0
+	qqX := float64(qX)
+	qqY := float64(qY)
+	qqZ := float64(qZ)
+	qqW := float64(qW)
+	sqY := qqY * qqY
+	sqZ := qqZ * qqZ
+
+	sinY := 2.0 * (qqW*qqZ + qqX*qqY)
+	cosY := 1.0 - 2*(sqY+sqZ)
+	yaw = int16(math.Round(math.Atan2(sinY, cosY) / degree))
+
+	return yaw
 }
