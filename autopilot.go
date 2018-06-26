@@ -120,16 +120,23 @@ func (tello *Tello) CancelGotoYaw() {
 // GotoYaw starts rotational movement to the specified yaw in degrees.
 // The yaw should be between -180 and +180 degrees.
 // The func returns immediately and a Goroutine handles the navigation.
-func (tello *Tello) GotoYaw(targetYaw int16) (err error) {
-	//log.Printf("GotoYaw called with height: %d\n", targetYaw)
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (may have been cancelled).
+func (tello *Tello) GotoYaw(targetYaw int16) (done chan bool, err error) {
+	//log.Printf("GotoYaw called with target: %d\n", targetYaw)
 	if targetYaw < -180 || targetYaw > 180 {
-		return errors.New("Target yaw must be between -180 and +180")
+		return nil, errors.New("Target yaw must be between -180 and +180")
 	}
+	adjustedTarget := targetYaw
+	if targetYaw < 0 {
+		adjustedTarget = 360 + targetYaw
+	}
+
 	// are we already navigating?
 	tello.autoYawMu.RLock()
 	if tello.autoYaw {
 		tello.autoYawMu.RUnlock()
-		return errors.New("Already navigating rotationally")
+		return nil, errors.New("Already navigating rotationally")
 	}
 	tello.autoYawMu.RUnlock()
 
@@ -137,11 +144,7 @@ func (tello *Tello) GotoYaw(targetYaw int16) (err error) {
 	tello.autoYaw = true
 	tello.autoYawMu.Unlock()
 
-	// // should we restate the target yaw to avoid unneccessary rotation?
-	// tello.fdMu.RLock()
-	// currentYaw := tello.fd.IMU.Yaw
-	// tello.dfMu.RUnlock()
-	// if int16Abs(currentYaw - targetYaw) > 180
+	done = make(chan bool, 1) // buffered so send doesn't block
 
 	//log.Println("autoYaw set - starting goroutine")
 
@@ -158,21 +161,36 @@ func (tello *Tello) GotoYaw(targetYaw int16) (err error) {
 				tello.ctrlLx = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
+				done <- true
 				return
 			}
 
 			tello.fdMu.RLock()
-			delta := targetYaw - tello.fd.IMU.Yaw // delta will be positive if we are too anticlockwise
-			//log.Printf("Target: %d, Height: %d, Delta: %d\n", dm, tello.fd.Height, delta)
+			adjustedCurrent := tello.fd.IMU.Yaw
 			tello.fdMu.RUnlock()
+			if adjustedCurrent < 0 {
+				adjustedCurrent = 360 + adjustedCurrent
+			}
+
+			delta := adjustedTarget - adjustedCurrent
+			absDelta := int16Abs(delta)
+			switch {
+			case absDelta <= 180: //
+			case delta > 0:
+				delta = absDelta - 360
+			case delta > 0:
+				delta = 360 - absDelta
+			}
+
+			//log.Printf("Target: %d, Current: %d, Delta: %d\n", adjustedTarget, adjustedCurrent, delta)
 
 			tello.ctrlMu.Lock()
 			switch {
-			case delta > 4:
-				tello.ctrlLx = 32500 // full throttle if >4deg off target
+			case delta > 10:
+				tello.ctrlLx = 32500 // full throttle if >10deg off target
 			case delta > 0:
-				tello.ctrlLx = 16250 // half throttle if <4deg off target
-			case delta < -4:
+				tello.ctrlLx = 16250 // half throttle if <10deg off target
+			case delta < -10:
 				tello.ctrlLx = -32500
 			case delta < 0:
 				tello.ctrlLx = -16250
@@ -189,7 +207,7 @@ func (tello *Tello) GotoYaw(targetYaw int16) (err error) {
 		}
 	}()
 
-	return nil
+	return done, nil
 }
 
 func int16Abs(x int16) int16 {

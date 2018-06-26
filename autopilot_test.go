@@ -57,3 +57,33 @@ func TestGotoHeight(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
+func TestGotoYaw(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+	time.Sleep(2 * time.Second)
+
+	drone.TakeOff()
+	time.Sleep(5 * time.Second)
+
+	if _, err = drone.GotoYaw(40); err != nil { // should rotate +40deg
+		t.Errorf("Error %v calling GotoYaw(40)", err)
+	}
+	time.Sleep(5 * time.Second)
+
+	done, err := drone.GotoYaw(-90)
+	if err != nil { // should rotate back 90 deg
+		t.Errorf("Error %v calling GotoYaw(-90)", err)
+	}
+	<-done
+	log.Println("Navigation completion notified")
+
+	drone.Land()
+
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+}

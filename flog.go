@@ -80,7 +80,7 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			tello.fdMu.Unlock()
 		case logRecIMU:
 			//log.Println("IMU rec found")
-			for i := 0; i < recLen-2; i++ {
+			for i := 0; i < recLen && pos+i < len(data); i++ {
 				xorBuf[i] = data[pos+i] ^ xorVal
 			}
 			offset := 10
