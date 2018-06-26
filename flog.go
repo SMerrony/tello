@@ -21,7 +21,9 @@
 
 package tello
 
-import "math"
+import (
+	"math"
+)
 
 func (tello *Tello) ackLogHeader(id []byte) {
 	tello.ctrlMu.Lock()
@@ -45,7 +47,7 @@ func (tello *Tello) parseLogPacket(data []byte) {
 		}
 		recLen := int(uint8(data[pos+1])) + int(uint8(data[pos+2]))<<8
 		logRecType := uint16(data[pos+4]) + uint16(data[pos+5])<<8
-		//log.Printf("Rec type %x\n", logRecType)
+		//log.Printf("Flight Log - Rec type: %x, len:%d\n", logRecType, recLen)
 		xorBuf := make([]byte, 256)
 		xorVal := data[pos+6]
 		switch logRecType {
@@ -78,7 +80,7 @@ func (tello *Tello) parseLogPacket(data []byte) {
 			tello.fdMu.Unlock()
 		case logRecIMU:
 			//log.Println("IMU rec found")
-			for i := 0; i < recLen; i++ {
+			for i := 0; i < recLen-2; i++ {
 				xorBuf[i] = data[pos+i] ^ xorVal
 			}
 			offset := 10

@@ -57,6 +57,8 @@ type Tello struct {
 	fdStreaming                    bool              // are we currently sending FlightData out?
 	files                          []fileData
 	fileTemp                       fileInternal
+	autoHeightMu                   sync.RWMutex
+	autoHeight                     bool
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.

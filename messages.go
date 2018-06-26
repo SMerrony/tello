@@ -214,7 +214,7 @@ type FlightData struct {
 	FrontOut                 bool
 	GravityState             bool
 	GroundSpeed              int16
-	Height                   int16
+	Height                   int16 // seems to be in decimetres
 	IMU                      IMUData
 	ImuCalibrationState      int8
 	ImuState                 bool
