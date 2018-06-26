@@ -40,15 +40,17 @@ func TestGotoHeight(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	if err = drone.GotoHeight(5); err != nil { // should go down to .5m
+	if _, err = drone.GotoHeight(5); err != nil { // should go down to .5m
 		t.Errorf("Error %v calling GotoHeight(5)", err)
 	}
 	time.Sleep(5 * time.Second)
 
-	if err = drone.GotoHeight(15); err != nil { // should go up to 1.5m
+	done, err := drone.GotoHeight(15)
+	if err != nil { // should go up to 1.5m
 		t.Errorf("Error %v calling GotoHeight(15)", err)
 	}
-	time.Sleep(5 * time.Second)
+	<-done
+	log.Println("Navigation completion notified")
 
 	drone.Land()
 
