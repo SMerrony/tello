@@ -101,7 +101,7 @@ func TestFlyToYawAndHeightConcurrently(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	hDoneC, err := drone.FlyToHeight(40)
+	hDoneC, err := drone.FlyToHeight(4)
 	if err != nil {
 		log.Fatalf("FlyToHeight failed with error %v", err)
 	}
