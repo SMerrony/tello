@@ -16,11 +16,14 @@ The following features have been implemented...
   * Stick-based flight control, ie. for joystick, game-, or flight-controller
   * Drone built-in flight commands, eg. Takeoff(), PalmLand()
   * Macro-level flight control, eg. Forward(), Up()
-  * Enriched flight data (some log data is added)
+  * Autopilot commands, eg. FlyToHeight(), FlyToYaw()
+  * Enriched flight data (some log data is added) for real-time telemetry
   * Video stream support
   * Picture taking/saving
   * Multiple drone support - Untested
 An example application using this package is available at http://github.com/SMerrony/telloterm
+
+This documentation should be consulted alongside https://github.com/SMerrony/tello/blob/master/ImplementationChart.md
 
 Concepts
 

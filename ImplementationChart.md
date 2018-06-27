@@ -57,13 +57,13 @@ This should be consulted alongside the GoDoc package documentation.  See https:/
 
 ## Macro and Flight Commands
 
-| Command | Comments |
-| ------- | -------- |
+| Low-Level Command | Macro Command | Comments |
+| ----------------- | ------------- | -------- |
 | UpdateSticks() | Set joystick position (macro commands below) |
 | | Hover() | Stop motion |
-| | Forward(), Backward(), Left(), Right() | Start moving at given percentage of max speed |
-| | Up(), Down() | Start moving at given percentage of max speed |
+| | Forward(), Backward(), Left(), Right(), Up(), Down()| Start moving at given percentage of max speed |
 | |Clockwise(), Anticlockwise() | aliases: TurnLeft(), TurnRight(), CounterClockwise() - Start turning at given percentage of max rate |
+| | FlyToHeight(), FlyToYaw() | Fly automatically to specified height/yaw (can use concurrently) |
 | SetSportsMode() | Also SetFastMode(), SetSlowMode() |
 | Flip() | Also BackFlip(), BackLeftFlip(), BackRightFlip(), ForwardFlip(), etc. |
 | StartSmartVideo(), StopSmartVideo() | eg. 360 rotation, circle, up-and-out |
