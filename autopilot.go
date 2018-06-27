@@ -31,20 +31,20 @@ import (
 
 const autopilotPeriodMs = 25 // how often the autopilot(s) monitor the drone
 
-// CancelGotoHeight stops any in-flight GotoHeight navigation.
+// CancelFlyToHeight stops any in-flight FlyToHeight navigation.
 // The drone should stop moving vertically.
-func (tello *Tello) CancelGotoHeight() {
+func (tello *Tello) CancelFlyToHeight() {
 	tello.autoHeightMu.Lock()
 	tello.autoHeight = false
 	tello.autoHeightMu.Unlock()
 }
 
-// GotoHeight starts vertical movement to the specified height in decimetres.
+// FlyToHeight starts vertical movement to the specified height in decimetres.
 // The func returns immediately and a Goroutine handles the navigation.
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
-func (tello *Tello) GotoHeight(dm int16) (done chan bool, err error) {
-	//log.Printf("GotoHeight called with height: %d\n", dm)
+func (tello *Tello) FlyToHeight(dm int16) (done chan bool, err error) {
+	//log.Printf("FlyToHeight called with height: %d\n", dm)
 	// are we already navigating?
 	tello.autoHeightMu.RLock()
 	if tello.autoHeight {
@@ -109,21 +109,21 @@ func (tello *Tello) GotoHeight(dm int16) (done chan bool, err error) {
 	return done, nil
 }
 
-// CancelGotoYaw stops any in-flight GotoYaw navigation.
+// CancelFlyToYaw stops any in-flight FlyToYaw navigation.
 // The drone should stop rotating.
-func (tello *Tello) CancelGotoYaw() {
+func (tello *Tello) CancelFlyToYaw() {
 	tello.autoYawMu.Lock()
 	tello.autoYaw = false
 	tello.autoYawMu.Unlock()
 }
 
-// GotoYaw starts rotational movement to the specified yaw in degrees.
+// FlyToYaw starts rotational movement to the specified yaw in degrees.
 // The yaw should be between -180 and +180 degrees.
 // The func returns immediately and a Goroutine handles the navigation.
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
-func (tello *Tello) GotoYaw(targetYaw int16) (done chan bool, err error) {
-	//log.Printf("GotoYaw called with target: %d\n", targetYaw)
+func (tello *Tello) FlyToYaw(targetYaw int16) (done chan bool, err error) {
+	//log.Printf("FlyToYaw called with target: %d\n", targetYaw)
 	if targetYaw < -180 || targetYaw > 180 {
 		return nil, errors.New("Target yaw must be between -180 and +180")
 	}
