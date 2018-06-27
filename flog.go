@@ -53,7 +53,7 @@ func (tello *Tello) parseLogPacket(data []byte) {
 		switch logRecType {
 		case logRecNewMVO:
 			//log.Println("NewMOV rec found")
-			for i := 0; i < recLen; i++ {
+			for i := 0; i < recLen && pos+i < len(data); i++ {
 				xorBuf[i] = data[pos+i] ^ xorVal
 			}
 			offset := 10
