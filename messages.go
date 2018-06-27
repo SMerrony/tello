@@ -128,11 +128,9 @@ type SvCmd byte
 
 // Smart Video flight commands...
 const (
-	// SvStop   SvCmd = 0 // Stop any Smart Video command in progress.
-	// SvStart        = 1
-	Sv360    = 1 << 2 // Slowly rotate around 360 degrees.
-	SvCircle = 2 << 2 // Circle around a point in front of the drone.
-	SvUpOut  = 3 << 2 // Perform the 'Up and Out' manouvre.
+	Sv360    SvCmd = 1 << 2 // Slowly rotate around 360 degrees.
+	SvCircle       = 2 << 2 // Circle around a point in front of the drone.
+	SvUpOut        = 3 << 2 // Perform the 'Up and Out' manouvre.
 )
 
 // VBR is a Video Bit Rate, the int value is meaningless.
