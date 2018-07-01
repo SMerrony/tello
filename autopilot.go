@@ -29,22 +29,31 @@ import (
 	"time"
 )
 
-const autopilotPeriodMs = 25 // how often the autopilot(s) monitor the drone
+const (
+	autopilotPeriodMs = 25 // how often the autopilot(s) monitor the drone
+	// AutoHeightLimitDm is the maximum vertical displacement allowed for AutoFlyToHeight() etc. in decimetres.
+	AutoHeightLimitDm = 300
+)
 
-// CancelFlyToHeight stops any in-flight FlyToHeight navigation.
+// CancelAutoFlyToHeight stops any in-flight AutoFlyToHeight navigation.
 // The drone should stop moving vertically.
-func (tello *Tello) CancelFlyToHeight() {
+func (tello *Tello) CancelAutoFlyToHeight() {
 	tello.autoHeightMu.Lock()
 	tello.autoHeight = false
 	tello.autoHeightMu.Unlock()
 }
 
-// FlyToHeight starts vertical movement to the specified height in decimetres.
-// The func returns immediately and a Goroutine handles the navigation.
+// AutoFlyToHeight starts vertical movement to the specified height in decimetres
+// (so a value of 10 means 1m).
+// The func returns immediately and a Goroutine handles the navigation until either
+// it is complete or cancelled via CancelAutoFlyToHeight().
 // The caller may optionally listen on the 'done' channel for a signal that
-// the navigation is complete (may have been cancelled).
-func (tello *Tello) FlyToHeight(dm int16) (done chan bool, err error) {
-	//log.Printf("FlyToHeight called with height: %d\n", dm)
+// the navigation is complete (or has been cancelled).
+func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
+	//log.Printf("AutoFlyToHeight called with height: %d\n", dm)
+	if dm > AutoHeightLimitDm || dm < -AutoHeightLimitDm {
+		return nil, errors.New("Verical navigation limit exceeded")
+	}
 	// are we already navigating?
 	tello.autoHeightMu.RLock()
 	if tello.autoHeight {
@@ -109,21 +118,22 @@ func (tello *Tello) FlyToHeight(dm int16) (done chan bool, err error) {
 	return done, nil
 }
 
-// CancelFlyToYaw stops any in-flight FlyToYaw navigation.
+// CancelAutoTurn stops any in-flight AutoTurnToYaw or AutoTurnByDeg navigation.
 // The drone should stop rotating.
-func (tello *Tello) CancelFlyToYaw() {
+func (tello *Tello) CancelAutoTurn() {
 	tello.autoYawMu.Lock()
 	tello.autoYaw = false
 	tello.autoYawMu.Unlock()
 }
 
-// FlyToYaw starts rotational movement to the specified yaw in degrees.
+// AutoTurnToYaw starts rotational movement to the specified yaw in degrees.
 // The yaw should be between -180 and +180 degrees.
 // The func returns immediately and a Goroutine handles the navigation.
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
-func (tello *Tello) FlyToYaw(targetYaw int16) (done chan bool, err error) {
-	//log.Printf("FlyToYaw called with target: %d\n", targetYaw)
+// You may explicitly cancel this operation via CancelAutoTurn().
+func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
+	//log.Printf("AutoTurnToYaw called with target: %d\n", targetYaw)
 	if targetYaw < -180 || targetYaw > 180 {
 		return nil, errors.New("Target yaw must be between -180 and +180")
 	}
@@ -208,6 +218,44 @@ func (tello *Tello) FlyToYaw(targetYaw int16) (done chan bool, err error) {
 	}()
 
 	return done, nil
+}
+
+// AutoTurnByDeg starts rotational movement by the specified amount degrees.
+// The amount should be between -180 and +180 degrees, where negative values cause an
+// anticlockwise rotation and vice-versa.
+// The func returns immediately and a Goroutine handles the navigation.
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (may have been cancelled).
+// You may explicitly cancel this operation via CancelAutoTurn().
+func (tello *Tello) AutoTurnByDeg(delta int16) (done chan bool, err error) {
+
+	if delta < -180 || delta > 180 {
+		return nil, errors.New("Turn amount must be between -180 and +180")
+	}
+
+	// are we already navigating?
+	tello.autoYawMu.RLock()
+	if tello.autoYaw {
+		tello.autoYawMu.RUnlock()
+		return nil, errors.New("Already navigating rotationally")
+	}
+	tello.autoYawMu.RUnlock()
+
+	tello.fdMu.RLock()
+	adjustedTarget := tello.fd.IMU.Yaw
+	tello.fdMu.RUnlock()
+
+	adjustedTarget += delta
+	switch {
+	case adjustedTarget == 360:
+		adjustedTarget = 0
+	case adjustedTarget > 180:
+		adjustedTarget = -(360 - adjustedTarget)
+	case adjustedTarget < -180:
+		adjustedTarget = 360 + adjustedTarget
+	}
+
+	return tello.AutoTurnToYaw(adjustedTarget)
 }
 
 func int16Abs(x int16) int16 {

@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func TestFlyToHeight(t *testing.T) {
+func TestAutoFlyToHeight(t *testing.T) {
 	drone := new(Tello)
 
 	err := drone.ControlConnectDefault()
@@ -40,14 +40,14 @@ func TestFlyToHeight(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	if _, err = drone.FlyToHeight(5); err != nil { // should go down to .5m
-		t.Errorf("Error %v calling FlyToHeight(5)", err)
+	if _, err = drone.AutoFlyToHeight(5); err != nil { // should go down to .5m
+		t.Errorf("Error %v calling AutoFlyToHeight(5)", err)
 	}
 	time.Sleep(5 * time.Second)
 
-	done, err := drone.FlyToHeight(15)
+	done, err := drone.AutoFlyToHeight(15)
 	if err != nil { // should go up to 1.5m
-		t.Errorf("Error %v calling FlyToHeight(15)", err)
+		t.Errorf("Error %v calling AutoFlyToHeight(15)", err)
 	}
 	<-done
 	log.Println("Navigation completion notified")
@@ -57,7 +57,7 @@ func TestFlyToHeight(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
-func TestFlyToYaw(t *testing.T) {
+func TestAutoTurnToYaw(t *testing.T) {
 	drone := new(Tello)
 
 	err := drone.ControlConnectDefault()
@@ -70,14 +70,14 @@ func TestFlyToYaw(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	if _, err = drone.FlyToYaw(40); err != nil { // should rotate +40deg
-		t.Errorf("Error %v calling FlyToYaw(40)", err)
+	if _, err = drone.AutoTurnToYaw(40); err != nil { // should rotate +40deg
+		t.Errorf("Error %v calling AutoTurnToYaw(40)", err)
 	}
 	time.Sleep(5 * time.Second)
 
-	done, err := drone.FlyToYaw(-90)
+	done, err := drone.AutoTurnToYaw(-90)
 	if err != nil { // should rotate back 90 deg
-		t.Errorf("Error %v calling FlyToYaw(-90)", err)
+		t.Errorf("Error %v calling AutoTurnToYaw(-90)", err)
 	}
 	<-done
 	log.Println("Navigation completion notified")
@@ -88,7 +88,7 @@ func TestFlyToYaw(t *testing.T) {
 	log.Println("Disconnected normally from Tello")
 }
 
-func TestFlyToYawAndHeightConcurrently(t *testing.T) {
+func TestAutoTurnToYawAndHeightConcurrently(t *testing.T) {
 	drone := new(Tello)
 
 	err := drone.ControlConnectDefault()
@@ -101,13 +101,13 @@ func TestFlyToYawAndHeightConcurrently(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	hDoneC, err := drone.FlyToHeight(4)
+	hDoneC, err := drone.AutoFlyToHeight(4)
 	if err != nil {
-		log.Fatalf("FlyToHeight failed with error %v", err)
+		log.Fatalf("AutoFlyToHeight failed with error %v", err)
 	}
-	yDoneC, err := drone.FlyToYaw(120)
+	yDoneC, err := drone.AutoTurnToYaw(120)
 	if err != nil {
-		log.Fatalf("FlyToYaw failed with error %v", err)
+		log.Fatalf("AutoTurnToYaw failed with error %v", err)
 	}
 
 	var hDone, yDone bool
@@ -121,6 +121,37 @@ func TestFlyToYawAndHeightConcurrently(t *testing.T) {
 	log.Println("Both manoeuvres complete")
 
 	drone.Land()
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+}
+func TestAutoTurnByDeg(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+	time.Sleep(2 * time.Second)
+
+	drone.TakeOff()
+	time.Sleep(5 * time.Second)
+
+	done, err := drone.AutoTurnByDeg(40)
+	if err != nil { // should rotate +40deg
+		t.Errorf("Error %v calling AutoTurnByDeg(40)", err)
+	}
+	<-done
+
+	done, err = drone.AutoTurnByDeg(-80)
+	if err != nil { // should rotate back to -40
+		t.Errorf("Error %v calling AutoTurnByDeg(-80)", err)
+	}
+	<-done
+	log.Println("Navigation completion notified")
+
+	drone.Land()
+
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
