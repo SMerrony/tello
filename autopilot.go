@@ -272,7 +272,7 @@ func (tello *Tello) AutoTurnByDeg(delta int16) (done chan bool, err error) {
 // }
 
 // SetHome establishes the current MVO position and IMU yaw as the home
-// point for autopilot operations.  It should be called after takeoff to establish a
+// point for autopilot operations.  It could be called after takeoff to establish a
 // home coordinate, or during (non-autopilot) flight to set a waypoint.
 func (tello *Tello) SetHome() (err error) {
 	tello.autoXYMu.RLock()
@@ -288,6 +288,9 @@ func (tello *Tello) SetHome() (err error) {
 	tello.homeY = tello.fd.MVO.PositionY
 	tello.homeYaw = tello.fd.IMU.Yaw
 	tello.fdMu.RUnlock()
+	if tello.homeYaw < 0 {
+		tello.homeYaw += 360
+	}
 	tello.homeValid = true
 	tello.autoXYMu.Unlock()
 	return nil
