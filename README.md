@@ -15,6 +15,7 @@ The following features have been implemented...
   * Stick-based flight control, ie. for joystick, game-, or flight-controller
   * Drone built-in flight commands, eg. Takeoff(), PalmLand()
   * Macro-level flight control, eg. Forward(), Up()
+  * Autopilot flight control, eg. AutoFlyToHeight(), AutoFlyToXY()
   * Video stream support
   * Enriched flight-data (some log data is added)
   * Picture taking/saving support 

@@ -63,7 +63,7 @@ This should be consulted alongside the GoDoc package documentation.  See https:/
 | | Hover() | Stop motion |
 | | Forward(), Backward(), Left(), Right(), Up(), Down()| Start moving at given percentage of max speed |
 | |Clockwise(), Anticlockwise() | aliases: TurnLeft(), TurnRight(), CounterClockwise() - Start turning at given percentage of max rate |
-| | AutoFlyToHeight(), AutoTurnToYaw(), AutoTurnByDeg() | Fly automatically to specified height/yaw (can use concurrently) |
+| | AutoFlyToHeight(), AutoTurnToYaw(), AutoTurnByDeg(), AutoFlyToXY() | Fly automatically to specified height/yaw/pos (can use concurrently) |
 | SetSportsMode() | Also SetFastMode(), SetSlowMode() |
 | Flip() | Also BackFlip(), BackLeftFlip(), BackRightFlip(), ForwardFlip(), etc. |
 | StartSmartVideo(), StopSmartVideo() | eg. 360 rotation, circle, up-and-out |
