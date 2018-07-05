@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	autopilotPeriodMs   = 50 //25 // how often the autopilot(s) monitor the drone
+	autopilotPeriodMs   = 25 // how often the autopilot(s) monitor/redirect the drone
 	autoPilotSpeedFast  = 32767
 	autoPilotSpeedSlow  = 16384
 	autoPilotSpeedVSlow = 8192
@@ -357,7 +357,6 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			cancelled := tello.autoXY == false
 			tello.autoXYMu.RUnlock()
 			if cancelled {
-				log.Println("Cancelled")
 				// stop vertical movement
 				tello.ctrlMu.Lock()
 				tello.ctrlRx = 0
@@ -408,8 +407,8 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 				log.Fatalf("Invalid state in AutoFlyToXY() - deltaY=%f", deltaY)
 			}
 
-			log.Printf("Current %.2f,%.2f Yaw: %d - Target: %.2f,%.2f - Deltas X: %.2f, Y:%.2f - Throttles: %d,%d\n",
-				currentX, currentY, currentYaw, targetX, targetY, deltaX, deltaY, tello.ctrlRx, tello.ctrlRy)
+			// log.Printf("Current %.2f,%.2f Yaw: %d - Target: %.2f,%.2f - Deltas X: %.2f, Y:%.2f - Throttles: %d,%d\n",
+			// 	currentX, currentY, currentYaw, targetX, targetY, deltaX, deltaY, tello.ctrlRx, tello.ctrlRy)
 
 			if tello.ctrlRx == 0.0 && tello.ctrlRy == 0.0 {
 				// we're there! Cancel...
