@@ -58,7 +58,12 @@ type Tello struct {
 	files                          []fileData
 	fileTemp                       fileInternal
 	autoHeightMu, autoYawMu        sync.RWMutex
-	autoHeight, autoYaw            bool
+	autoHeight, autoYaw            bool         // flags to indicate if autoflight is active
+	autoXYMu                       sync.RWMutex // autoXYMu protects originX/Y/Valid/Yaw
+	autoXY                         bool         // flag for XY autoflight
+	homeValid                      bool         // has an home point been set?
+	homeX, homeY                   float32      // set on request to provide a frame of reference
+	homeYaw                        int16        // -180 - +180 degrees, yaw when origin set
 }
 
 // ControlConnect attempts to connect to a Tello at the provided network addr.

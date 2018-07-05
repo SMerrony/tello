@@ -124,6 +124,7 @@ func TestAutoTurnToYawAndHeightConcurrently(t *testing.T) {
 	drone.ControlDisconnect()
 	log.Println("Disconnected normally from Tello")
 }
+
 func TestAutoTurnByDeg(t *testing.T) {
 	drone := new(Tello)
 
@@ -149,6 +150,74 @@ func TestAutoTurnByDeg(t *testing.T) {
 	}
 	<-done
 	log.Println("Navigation completion notified")
+
+	drone.Land()
+
+	drone.ControlDisconnect()
+	log.Println("Disconnected normally from Tello")
+}
+
+func TestCalcDeltas(t *testing.T) {
+	dx, dy := calcXYdeltas(0, 0, 0, 1, 1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(0, 0, 0, -1, -1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(0, -0.5, 0.5, 0, 1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(45, 0, 0, 1, 1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(45, 0, 0, -1, -1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(-45, 0, 0, 1, 1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+
+	dx, dy = calcXYdeltas(-45, 0, 0, -1, -1)
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+}
+
+func TestAutoFlyToXY(t *testing.T) {
+	drone := new(Tello)
+
+	err := drone.ControlConnectDefault()
+	if err != nil {
+		log.Fatalf("CCD failed with error %v", err)
+	}
+	log.Println("Connected to Tello control channel")
+	time.Sleep(2 * time.Second)
+	drone.TakeOff()
+	time.Sleep(5 * time.Second)
+	done, err := drone.AutoFlyToHeight(5)
+	if err != nil {
+		log.Fatalf("FlyToHeight failed with error %v", err)
+	}
+	<-done
+
+	time.Sleep(2 * time.Second)
+	err = drone.SetHome()
+	if err != nil {
+		t.Errorf("Error %v calling SetOrigin()", err)
+	}
+
+	done, err = drone.AutoFlyToXY(0, 0.75)
+	if err != nil { // should fly forward 75cm
+		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.75)", err)
+	}
+	<-done
+
+	log.Println("Navigation 1 completion notified")
+
+	done, err = drone.AutoFlyToXY(0, 0.0)
+	if err != nil { // should fly back
+		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.0)", err)
+	}
+	<-done
+
+	log.Println("Navigation 2 completion notified")
 
 	drone.Land()
 

@@ -24,23 +24,35 @@
 package tello
 
 // TakeOff sends a normal takeoff request to the Tello.
+// Any previously set origin is invalidated.
 func (tello *Tello) TakeOff() {
 	tello.ctrlMu.Lock()
-	defer tello.ctrlMu.Unlock()
+
+	tello.autoXYMu.Lock()
+	tello.homeValid = false // origin is invalidated until flying and reset
+	tello.autoXYMu.Unlock()
 
 	tello.ctrlSeq++
 	pkt := newPacket(ptSet, msgDoTakeoff, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
+
+	tello.ctrlMu.Unlock()
 }
 
 // ThrowTakeOff initiates a 'throw and go' launch.
+// Any previously set origin is invalidated.
 func (tello *Tello) ThrowTakeOff() {
 	tello.ctrlMu.Lock()
-	defer tello.ctrlMu.Unlock()
+
+	tello.autoXYMu.Lock()
+	tello.homeValid = false // origin is invalidated until flying and reset
+	tello.autoXYMu.Unlock()
 
 	tello.ctrlSeq++
 	pkt := newPacket(ptGet, msgDoThrowTakeoff, tello.ctrlSeq, 0)
 	tello.ctrlConn.Write(packetToBuffer(pkt))
+
+	tello.ctrlMu.Unlock()
 }
 
 // Land sends a normal Land request to the Tello.

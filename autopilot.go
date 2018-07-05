@@ -26,13 +26,21 @@ package tello
 import (
 	"errors"
 	"log"
+	"math"
 	"time"
 )
 
 const (
-	autopilotPeriodMs = 25 // how often the autopilot(s) monitor the drone
+	autopilotPeriodMs   = 50 //25 // how often the autopilot(s) monitor the drone
+	autoPilotSpeedFast  = 32767
+	autoPilotSpeedSlow  = 16384
+	autoPilotSpeedVSlow = 8192
 	// AutoHeightLimitDm is the maximum vertical displacement allowed for AutoFlyToHeight() etc. in decimetres.
 	AutoHeightLimitDm = 300
+	// AutoXYLimitM is the maximum horizontal displacement allowed for AutoFlyToXY() etc. in metres.
+	AutoXYLimitM = 200 // 200m
+	// AutoXYToleranceM is the maximum accuracy we try to attain in XY navigation in metres
+	AutoXYToleranceM = 0.3
 )
 
 // CancelAutoFlyToHeight stops any in-flight AutoFlyToHeight navigation.
@@ -77,7 +85,7 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 			cancelled := tello.autoHeight == false
 			tello.autoHeightMu.RUnlock()
 			if cancelled {
-				log.Println("Cancelled")
+				//log.Println("Cancelled")
 				// stop vertical movement
 				tello.ctrlMu.Lock()
 				tello.ctrlLy = 0
@@ -95,13 +103,13 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 			tello.ctrlMu.Lock()
 			switch {
 			case delta > 4:
-				tello.ctrlLy = 32500 // full throttle if >40cm off target
+				tello.ctrlLy = autoPilotSpeedFast // full throttle if >40cm off target
 			case delta > 0:
-				tello.ctrlLy = 16250 // half throttle if <40cm off target
+				tello.ctrlLy = autoPilotSpeedSlow // half throttle if <40cm off target
 			case delta < -4:
-				tello.ctrlLy = -32500
+				tello.ctrlLy = -autoPilotSpeedFast
 			case delta < 0:
-				tello.ctrlLy = -16250
+				tello.ctrlLy = -autoPilotSpeedSlow
 			case delta == 0: // might need some 'tolerance' here?
 				// we're there! Cancel...
 				tello.autoHeightMu.Lock()
@@ -109,7 +117,7 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 				tello.autoHeightMu.Unlock()
 			}
 			tello.ctrlMu.Unlock()
-			tello.sendStickUpdate()
+			//tello.sendStickUpdate()
 
 			time.Sleep(autopilotPeriodMs * time.Millisecond)
 		}
@@ -197,13 +205,13 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 			tello.ctrlMu.Lock()
 			switch {
 			case delta > 10:
-				tello.ctrlLx = 32500 // full throttle if >10deg off target
+				tello.ctrlLx = autoPilotSpeedFast
 			case delta > 0:
-				tello.ctrlLx = 16250 // half throttle if <10deg off target
+				tello.ctrlLx = autoPilotSpeedSlow
 			case delta < -10:
-				tello.ctrlLx = -32500
+				tello.ctrlLx = -autoPilotSpeedFast
 			case delta < 0:
-				tello.ctrlLx = -16250
+				tello.ctrlLx = -autoPilotSpeedSlow
 			case delta == 0: // might need some 'tolerance' here?
 				// we're there! Cancel...
 				tello.autoYawMu.Lock()
@@ -211,7 +219,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 				tello.autoYawMu.Unlock()
 			}
 			tello.ctrlMu.Unlock()
-			tello.sendStickUpdate()
+			//tello.sendStickUpdate()
 
 			time.Sleep(autopilotPeriodMs * time.Millisecond)
 		}
@@ -258,6 +266,178 @@ func (tello *Tello) AutoTurnByDeg(delta int16) (done chan bool, err error) {
 	return tello.AutoTurnToYaw(adjustedTarget)
 }
 
+// // autoWaitAndSetOrigin is run as a Goroutine after takeoff is initiated.
+// func (tello *Tello) autoWaitAndSetOrigin() {
+
+// }
+
+// SetHome establishes the current MVO position and IMU yaw as the home
+// point for autopilot operations.  It should be called after takeoff to establish a
+// home coordinate, or during (non-autopilot) flight to set a waypoint.
+func (tello *Tello) SetHome() (err error) {
+	tello.autoXYMu.RLock()
+	alreadyAuto := tello.autoXY
+	tello.autoXYMu.RUnlock()
+	if alreadyAuto {
+		return errors.New("Cannot set origin during automatic flight")
+	}
+	tello.autoXYMu.Lock()
+	tello.autoXY = false
+	tello.fdMu.RLock()
+	tello.homeX = tello.fd.MVO.PositionX
+	tello.homeY = tello.fd.MVO.PositionY
+	tello.homeYaw = tello.fd.IMU.Yaw
+	tello.fdMu.RUnlock()
+	tello.homeValid = true
+	tello.autoXYMu.Unlock()
+	return nil
+}
+
+// IsHomeSet tests whether the home point used for the travelling AutoFly... funcs is set.
+func (tello *Tello) IsHomeSet() (set bool) {
+	tello.autoXYMu.RLock()
+	set = tello.homeValid
+	tello.autoXYMu.RUnlock()
+	return set
+}
+
+// CancelAutoFlyToXY stops any in-flight AutoFlyToXY navigation.
+// The drone should stop.
+func (tello *Tello) CancelAutoFlyToXY() {
+	tello.autoXYMu.Lock()
+	tello.autoXY = false
+	tello.autoXYMu.Unlock()
+}
+
+// AutoFlyToXY starts horizontal movement to the specified (X, Y) location
+// expressed in metres from the home point (which must have been previously set).
+// The func returns immediately and a Goroutine handles the navigation until either
+// it is complete or cancelled via CancelFlyToXY().
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (or has been cancelled).
+func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err error) {
+	//log.Printf("FlyToXY called with XY: %d\n", dm)
+	if targetX > AutoXYLimitM || targetY > AutoXYLimitM ||
+		targetX < -AutoXYLimitM || targetY < -AutoXYLimitM {
+		return nil, errors.New("Horizontal navigation limit exceeded")
+	}
+	// are we already navigating?
+	tello.autoXYMu.RLock()
+	already := tello.autoXY
+	valid := tello.homeValid
+	originX := tello.homeX
+	originY := tello.homeY
+	tello.autoXYMu.RUnlock()
+	if already {
+		return nil, errors.New("Already AutoFlying horizontally")
+	}
+	if !valid {
+		return nil, errors.New("Cannot AutoFly as home point has not be set (or is invalid)")
+	}
+
+	tello.autoXYMu.Lock()
+	tello.autoXY = true
+	tello.autoXYMu.Unlock()
+
+	// adjust target relative to origin -SHOULD WE ADJUST YAW TOO???
+	targetX += originX
+	targetY += originY
+
+	done = make(chan bool, 1) // buffered so send doesn't block
+
+	//log.Println("AutoXY set - starting goroutine")
+
+	go func() {
+		for {
+			// has autoflight been cancelled?
+			tello.autoXYMu.RLock()
+			cancelled := tello.autoXY == false
+			tello.autoXYMu.RUnlock()
+			if cancelled {
+				log.Println("Cancelled")
+				// stop vertical movement
+				tello.ctrlMu.Lock()
+				tello.ctrlRx = 0
+				tello.ctrlRy = 0
+				tello.ctrlMu.Unlock()
+				tello.sendStickUpdate()
+				done <- true
+				return
+			}
+
+			// get current yaw & position
+			tello.fdMu.RLock()
+			currentYaw := tello.fd.IMU.Yaw
+			currentX := tello.fd.MVO.PositionX
+			currentY := tello.fd.MVO.PositionY
+			tello.fdMu.RUnlock()
+
+			deltaX, deltaY := calcXYdeltas(currentYaw, currentX, currentY, targetX, targetY)
+
+			tello.ctrlMu.Lock()
+
+			switch {
+			case deltaX <= AutoXYToleranceM && deltaX >= -AutoXYToleranceM:
+				tello.ctrlRx = 0
+			case deltaX >= 1.5:
+				tello.ctrlRx = autoPilotSpeedSlow // full throttle if =>1m off target
+			case deltaX <= -1.5:
+				tello.ctrlRx = -autoPilotSpeedSlow // full throttle if =>1m off target
+			case deltaX > AutoXYToleranceM:
+				tello.ctrlRx = autoPilotSpeedSlow // half throttle
+			case deltaX < -AutoXYToleranceM:
+				tello.ctrlRx = -autoPilotSpeedSlow // half throttle
+			default:
+				log.Fatalf("Invalid state in AutoFlyToXY() - deltaX=%f", deltaX)
+			}
+			switch {
+			case deltaY <= AutoXYToleranceM && deltaY >= -AutoXYToleranceM:
+				tello.ctrlRy = 0
+			case deltaY >= 1.5:
+				tello.ctrlRy = autoPilotSpeedSlow // full throttle if =>1m off target
+			case deltaY <= -1.5:
+				tello.ctrlRy = -autoPilotSpeedSlow // full throttle if =>1m off target
+			case deltaY > AutoXYToleranceM:
+				tello.ctrlRy = autoPilotSpeedSlow // half throttle
+			case deltaY < -AutoXYToleranceM:
+				tello.ctrlRy = -autoPilotSpeedSlow // half throttle
+			default:
+				log.Fatalf("Invalid state in AutoFlyToXY() - deltaY=%f", deltaY)
+			}
+
+			log.Printf("Current %.2f,%.2f Yaw: %d - Target: %.2f,%.2f - Deltas X: %.2f, Y:%.2f - Throttles: %d,%d\n",
+				currentX, currentY, currentYaw, targetX, targetY, deltaX, deltaY, tello.ctrlRx, tello.ctrlRy)
+
+			if tello.ctrlRx == 0.0 && tello.ctrlRy == 0.0 {
+				// we're there! Cancel...
+				tello.autoXYMu.Lock()
+				tello.autoXY = false
+				tello.autoXYMu.Unlock()
+			}
+			tello.ctrlMu.Unlock()
+			//tello.sendStickUpdate()
+
+			time.Sleep(autopilotPeriodMs * time.Millisecond)
+		}
+	}()
+
+	return done, nil
+}
+
+func calcXYdeltas(yawDeg int16, currX, currY, targetX, targetY float32) (dx, dy float32) {
+	adjustedYaw := float64(yawDeg)
+	if adjustedYaw < 0 {
+		adjustedYaw += 360.0
+	}
+	adjustedYaw *= math.Pi / 180
+
+	dx = float32(math.Cos(adjustedYaw))*(targetX-currX) - float32(math.Sin(adjustedYaw))*(targetY-currY)
+	dy = float32(math.Sin(adjustedYaw))*(targetX-currX) + float32(math.Cos(adjustedYaw))*(targetY-currY)
+
+	return dx, dy
+}
+
+// Helper functions...
 func int16Abs(x int16) int16 {
 	if x < 0 {
 		return -x
