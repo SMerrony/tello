@@ -118,6 +118,9 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	tello.ctrlMu.RLock()
 	if !tello.ctrlConnected {
 		tello.ctrlMu.RUnlock()
+		tello.ctrlMu.Lock()
+		tello.ctrlConnecting = false
+		tello.ctrlMu.Unlock()
 		return errors.New("Timeout waiting for response to connection request from Tello")
 	}
 	tello.ctrlMu.RUnlock()
