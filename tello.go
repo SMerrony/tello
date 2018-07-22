@@ -267,13 +267,6 @@ func (tello *Tello) controlResponseListener() {
 	buff := make([]byte, 4096)
 
 	for {
-		tello.ctrlMu.RLock()
-		if !tello.ctrlConnecting { // the connection attempt has been aborted
-			tello.ctrlMu.RUnlock()
-			return
-		}
-		tello.ctrlMu.RUnlock()
-
 		n, err := tello.ctrlConn.Read(buff)
 
 		// the initial connect response is different...
