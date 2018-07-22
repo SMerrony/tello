@@ -93,6 +93,9 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	tello.ctrlConn, err = net.DialUDP("udp", localAddr, droneAddr)
 	tello.ctrlMu.Unlock()
 	if err != nil {
+		if tello.ctrlConn != nil {
+			tello.ctrlConn.Close()
+		}
 		return err
 	}
 
