@@ -27,6 +27,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -291,6 +292,9 @@ func (tello *Tello) controlResponseListener() {
 		default:
 		}
 		if err != nil {
+			if strings.HasSuffix(err.Error(), "use of closed network connection") {
+				return
+			}
 			log.Printf("Network Read Error - %v\n", err)
 		} else {
 			if buff[0] != msgHdr {
