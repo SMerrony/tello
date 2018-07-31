@@ -35,7 +35,7 @@ import (
 )
 
 func main() {
-  drone := new(Tello)
+  	drone := new(tello.Tello)
   err := drone.ControlConnectDefault()
   if err != nil {
     log.Fatalf("%v", err) 
