@@ -271,7 +271,10 @@ func (tello *Tello) controlResponseListener() {
 		n, err := tello.ctrlConn.Read(buff)
 
 		// the initial connect response is different...
-		if tello.ctrlConnecting && n == 11 {
+		tello.ctrlMu.RLock()
+		connecting := tello.ctrlConnecting
+		tello.ctrlMu.RUnlock()
+		if connecting && n == 11 {
 			if bytes.ContainsAny(buff, "conn_ack:") {
 				// TODO handle returned video port?
 				//log.Printf("Debug: conn_ack received, buffer len: %d\n", n)
