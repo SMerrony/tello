@@ -121,7 +121,7 @@ func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 			filename := fmt.Sprintf("%s_%d.jpg", prefix, np)
 			err = ioutil.WriteFile(filename, f.fileBytes, 0644)
 			if err != nil {
-				break
+				return 0, err
 			}
 			np++
 		}
