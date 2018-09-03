@@ -65,9 +65,14 @@ func (tello *Tello) VideoDisconnect() {
 func (tello *Tello) videoResponseListener() {
 	for {
 		vbuf := make([]byte, 2048)
+		if tello.videoConn == nil {
+			// must have been closed
+			return
+		}
 		n, _, err := tello.videoConn.ReadFromUDP(vbuf)
 		if err != nil {
 			log.Printf("Error reading from video channel - %v\n", err)
+			return
 		}
 		select {
 		case tello.videoChan <- vbuf[2:n]:

@@ -42,6 +42,5 @@ Eg. GetFlightData() vs. StreamFlightData(), and UpdateSticks() vs. StartStickLis
 Use whichever paradigm you prefer, but be aware that the channel-based calls should return immediately (the channels are buffered)
 whereas the function-based options could conceivably cause your application to pause very briefly if the Tello is very busy.
 (In practice, the author has not found this to be an issue.)
-
 */
 package tello
