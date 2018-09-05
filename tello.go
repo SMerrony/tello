@@ -44,7 +44,7 @@ const keepAlivePeriodMs = 50
 type Tello struct {
 	ctrlMu                         sync.RWMutex // this mutex protects the control fields
 	ctrlConn, videoConn            *net.UDPConn
-	ctrlStopChan, videoStopChan    chan bool
+	videoStopChan                  chan bool
 	ctrlConnecting, ctrlConnected  bool
 	ctrlSeq                        uint16
 	ctrlRx, ctrlRy, ctrlLx, ctrlLy int16 // we are using the SDL convention: vals range from -32768 to 32767
@@ -101,9 +101,6 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 	}
 
 	// start the control listener Goroutine
-	tello.ctrlMu.Lock()
-	tello.ctrlStopChan = make(chan bool, 2)
-	tello.ctrlMu.Unlock()
 	go tello.controlResponseListener()
 
 	// say hello to the Tello
@@ -145,7 +142,6 @@ func (tello *Tello) ControlConnectDefault() (err error) {
 // ControlDisconnect stops the control channel listener and closes the connection to a Tello.
 func (tello *Tello) ControlDisconnect() {
 	// TODO should we tell the Tello we are disconnecting?
-	tello.ctrlStopChan <- true
 	tello.ctrlConn.Close()
 	tello.ctrlConnected = false
 }
@@ -288,12 +284,6 @@ func (tello *Tello) controlResponseListener() {
 			continue
 		}
 
-		select {
-		case <-tello.ctrlStopChan:
-			log.Println("ControlResponseLister stopped")
-			return
-		default:
-		}
 		if err != nil {
 			if strings.HasSuffix(err.Error(), "use of closed network connection") {
 				return
