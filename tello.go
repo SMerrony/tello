@@ -297,6 +297,8 @@ func (tello *Tello) controlResponseListener() {
 				switch pkt.messageID {
 				case msgDoLand: // ignore for now
 				case msgDoTakeoff: // ignore for now
+				case msgDoTakePic:
+					log.Printf("Take Picture echoed with response: <%v>\n", pkt.payload)
 				case msgFileSize: // initial response to Take Picture command
 					ft, fs, fID := payloadToFileInfo(pkt.payload)
 					//log.Printf("Take pic response: type: %d, size: %d, ID: %d\n", ft, fs, fID)
