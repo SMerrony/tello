@@ -142,8 +142,10 @@ func (tello *Tello) ControlConnectDefault() (err error) {
 // ControlDisconnect stops the control channel listener and closes the connection to a Tello.
 func (tello *Tello) ControlDisconnect() {
 	// TODO should we tell the Tello we are disconnecting?
+	tello.ctrlMu.Lock()
 	tello.ctrlConn.Close()
 	tello.ctrlConnected = false
+	tello.ctrlMu.Unlock()
 }
 
 // ControlConnected returns true if we are currently connected.
