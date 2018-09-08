@@ -33,6 +33,7 @@ const (
 
 // VideoConnect attempts to connect to a Tello video channel at the provided addr and starts a listener.
 // A channel of raw H.264 video frames is returned along with any error.
+// The channel will be closed if the connection is lost.
 func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int) (<-chan []byte, error) {
 	droneAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
@@ -67,11 +68,13 @@ func (tello *Tello) videoResponseListener() {
 		vbuf := make([]byte, 2048)
 		if tello.videoConn == nil {
 			// must have been closed
+			close(tello.videoChan)
 			return
 		}
 		n, _, err := tello.videoConn.ReadFromUDP(vbuf)
 		if err != nil {
 			log.Printf("Error reading from video channel - %v\n", err)
+			close(tello.videoChan)
 			return
 		}
 		select {
