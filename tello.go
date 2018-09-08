@@ -504,7 +504,7 @@ func (tello *Tello) sendDateTime() {
 
 func (tello *Tello) keepAlive() {
 	for {
-		if tello.ctrlConnected {
+		if tello.ControlConnected() {
 			tello.sendStickUpdate()
 		} else {
 			return // we've disconnected
