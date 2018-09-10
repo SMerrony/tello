@@ -53,6 +53,7 @@ type Tello struct {
 	videoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
+	stopStickListener              chan bool         // internal singal to stop the stick listener
 	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
 	fd                             FlightData        // our private amalgamated store of the latest data
 	fdStreaming                    bool              // are we currently sending FlightData out?
@@ -515,8 +516,13 @@ func (tello *Tello) keepAlive() {
 
 func (tello *Tello) stickListener() {
 	for {
-		sm := <-tello.stickChan
-		tello.UpdateSticks(sm)
+		select {
+		case sm := <-tello.stickChan:
+			tello.UpdateSticks(sm)
+		case <-tello.stopStickListener:
+			tello.stickListening = false
+			return
+		}
 	}
 }
 
@@ -528,9 +534,17 @@ func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) 
 	}
 	tello.stickListening = true
 	// start the stick listener
+	tello.stopStickListener = make(chan bool)
 	tello.stickChan = make(chan StickMessage, 10)
 	go tello.stickListener()
 	return tello.stickChan, nil
+}
+
+// StopStickListener stops a Goroutine started by StartStickListener().
+func (tello *Tello) StopStickListener() {
+	if tello.stickListening {
+		tello.stopStickListener <- true
+	}
 }
 
 // UpdateSticks does a one-off update of the stick values which are then sent to the Tello.
