@@ -105,8 +105,10 @@ func (tello *Tello) SetVideoBitrate(vbr VBR) {
 	tello.ctrlConn.Write(packetToBuffer(pkt))
 }
 
-// StartVideo asks the Tello to start sending video.
-func (tello *Tello) StartVideo() {
+// GetVideoSpsPps asks the Tello to send SPS and PPS in video stream.
+// Calling this more often decreases video bandwidth, calling less often
+// results in video artifacts.  Every 0.5 to 2.0 seconds seems a reasonable range.
+func (tello *Tello) GetVideoSpsPps() {
 	tello.ctrlMu.Lock()
 	defer tello.ctrlMu.Unlock()
 
