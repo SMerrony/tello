@@ -370,6 +370,7 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.EastSpeed = tmpFd.EastSpeed
 					tello.fd.ElectricalMachineryState = tmpFd.ElectricalMachineryState
 					tello.fd.EmOpen = tmpFd.EmOpen
+					tello.fd.ErrorState = tmpFd.ErrorState
 					tello.fd.FactoryMode = tmpFd.FactoryMode
 					tello.fd.Flying = tmpFd.Flying
 					tello.fd.FlyMode = tmpFd.FlyMode
@@ -384,7 +385,6 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.NorthSpeed = tmpFd.NorthSpeed
 					tello.fd.OnGround = tmpFd.OnGround
 					tello.fd.OutageRecording = tmpFd.OutageRecording
-					tello.fd.OverTemp = tmpFd.OverTemp
 					tello.fd.PowerState = tmpFd.PowerState
 					tello.fd.PressureState = tmpFd.PressureState
 					tello.fd.ThrowFlyTimer = tmpFd.ThrowFlyTimer

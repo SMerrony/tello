@@ -191,8 +191,8 @@ type fileChunk struct {
 // This data is not all sent at once from the drone, different fields may be updated
 // at varying rates.
 type FlightData struct {
-	BatteryLow               bool
 	BatteryCritical          bool
+	BatteryLow               bool
 	BatteryMilliVolts        int16
 	BatteryPercentage        int8
 	BatteryState             bool
@@ -200,9 +200,10 @@ type FlightData struct {
 	DownVisualState          bool
 	DroneFlyTimeLeft         int16
 	DroneHover               bool
-	EmOpen                   bool
 	EastSpeed                int16
 	ElectricalMachineryState uint8
+	EmOpen                   bool
+	ErrorState               bool
 	FactoryMode              bool
 	Flying                   bool
 	FlyMode                  uint8
@@ -223,14 +224,13 @@ type FlightData struct {
 	NorthSpeed               int16
 	OnGround                 bool
 	OutageRecording          bool
-	OverTemp                 bool
 	PowerState               bool
 	PressureState            bool
 	SmartVideoExitMode       int16
 	SSID                     string
 	ThrowFlyTimer            int8
-	VerticalSpeed            int16
 	Version                  string
+	VerticalSpeed            int16
 	VideoBitrate             VBR
 	WifiInterference         uint8
 	WifiStrength             uint8
@@ -270,8 +270,8 @@ const (
 	logValidVelX = 0x01
 	logValidVelY = 0x02
 	logValidVelZ = 0x04
-	logValidPosX = 0x10
-	logValidPosY = 0x20
+	logValidPosY = 0x10
+	logValidPosX = 0x20
 	logValidPosZ = 0x40
 )
 
@@ -382,7 +382,7 @@ func payloadToFlightData(pl []byte) (fd FlightData) {
 	fd.FrontIn = (pl[22] & 1) == 1
 	fd.FrontOut = (pl[22] >> 1 & 1) == 1
 	fd.FrontLSC = (pl[22] >> 2 & 1) == 1
-	fd.OverTemp = (pl[23] & 1) == 1
+	fd.ErrorState = (pl[23] & 1) == 1
 
 	return fd
 }
