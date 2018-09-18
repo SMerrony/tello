@@ -31,10 +31,10 @@ import (
 )
 
 const (
-	autopilotPeriodMs   = 25 // how often the autopilot(s) monitor/redirect the drone
-	autoPilotSpeedFast  = 32767
-	autoPilotSpeedSlow  = 16384
-	autoPilotSpeedVSlow = 8192
+	autopilotPeriodMs  = 25 // how often the autopilot(s) monitor/redirect the drone
+	autoPilotSpeedFast = 32767
+	autoPilotSpeedSlow = 16384
+	// autoPilotSpeedVSlow = 8192
 	// AutoHeightLimitDm is the maximum vertical displacement allowed for AutoFlyToHeight() etc. in decimetres.
 	AutoHeightLimitDm = 300
 	// AutoXYLimitM is the maximum horizontal displacement allowed for AutoFlyToXY() etc. in metres.
@@ -82,9 +82,9 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 		for {
 			// has autoflight been cancelled?
 			tello.autoHeightMu.RLock()
-			cancelled := tello.autoHeight == false
+			autoH := tello.autoHeight
 			tello.autoHeightMu.RUnlock()
-			if cancelled {
+			if !autoH {
 				//log.Println("Cancelled")
 				// stop vertical movement
 				tello.ctrlMu.Lock()
@@ -170,9 +170,9 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 		for {
 			// has autoflight been cancelled?
 			tello.autoYawMu.RLock()
-			cancelled := tello.autoYaw == false
+			autoY := tello.autoYaw
 			tello.autoYawMu.RUnlock()
-			if cancelled {
+			if !autoY {
 				log.Println("Cancelled")
 				// stop rotational movement
 				tello.ctrlMu.Lock()
@@ -354,9 +354,9 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 		for {
 			// has autoflight been cancelled?
 			tello.autoXYMu.RLock()
-			cancelled := tello.autoXY == false
+			auto := tello.autoXY
 			tello.autoXYMu.RUnlock()
-			if cancelled {
+			if !auto {
 				// stop vertical movement
 				tello.ctrlMu.Lock()
 				tello.ctrlRx = 0

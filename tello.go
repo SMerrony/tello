@@ -32,6 +32,9 @@ import (
 	"time"
 )
 
+// TelloPackageVersion holds the semver of this package release.
+const TelloPackageVersion = "v0.9.1" // TODO Update with each release
+
 const (
 	defaultTelloAddr        = "192.168.10.1"
 	defaultTelloControlPort = 8889
@@ -142,7 +145,7 @@ func (tello *Tello) ControlConnectDefault() (err error) {
 
 // ControlDisconnect stops the control channel listener and closes the connection to a Tello.
 func (tello *Tello) ControlDisconnect() {
-	// TODO should we tell the Tello we are disconnecting?
+	// TODO should/can we tell the Tello we are disconnecting?
 	tello.ctrlMu.Lock()
 	tello.ctrlConn.Close()
 	tello.ctrlConnected = false
@@ -582,8 +585,7 @@ func (tello *Tello) sendStickUpdate() {
 	pkt.payload = make([]byte, 11)
 
 	// This packing of the joystick data is just vile...
-	var packedAxes uint64
-	packedAxes = jsInt16ToTello(tello.ctrlRx) & 0x07ff
+	packedAxes := jsInt16ToTello(tello.ctrlRx) & 0x07ff
 	packedAxes |= (jsInt16ToTello(tello.ctrlRy) & 0x07ff) << 11
 	packedAxes |= (jsInt16ToTello(tello.ctrlLy) & 0x07ff) << 22
 	packedAxes |= (jsInt16ToTello(tello.ctrlLx) & 0x07ff) << 33

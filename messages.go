@@ -174,7 +174,7 @@ type fileInternal struct {
 }
 
 type filePiece struct {
-	fID       uint16
+	//fID       uint16
 	numChunks int
 	chunks    []fileChunk
 }
