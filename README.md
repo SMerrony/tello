@@ -23,7 +23,9 @@ The following features have been implemented...
 
 See [ImplementationChart.md](https://github.com/SMerrony/tello/blob/master/ImplementationChart.md) for full details of what functions are currently implemented.
 
-An example application using this package is available at [telloterm](https://github.com/SMerrony/telloterm)
+Documentation should be available locally via godoc, or via [godoc.org](https://godoc.org/github.com/SMerrony/tello).
+
+An example application using this package is available at [telloterm](https://github.com/SMerrony/telloterm).
 
 Here is an example of just about the simplest use of the package...
 ```
