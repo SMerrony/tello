@@ -62,7 +62,7 @@ func TestJsInt16ToTello(t *testing.T) {
 func TestControlConnectDisconnect(t *testing.T) {
 
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -77,7 +77,7 @@ func TestControlConnectDisconnect(t *testing.T) {
 
 func TestStreamingData(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -100,7 +100,7 @@ func TestStreamingData(t *testing.T) {
 
 func TestTakeoffLand(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -119,7 +119,7 @@ func TestTakeoffLand(t *testing.T) {
 
 func TestBatteryThresholdCmds(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -146,7 +146,7 @@ func TestBatteryThresholdCmds(t *testing.T) {
 
 func TestGetSSID(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)

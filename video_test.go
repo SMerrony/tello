@@ -29,7 +29,7 @@ import (
 
 func TestVideoBitrate(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("ControlConnect failed with error %v", err)

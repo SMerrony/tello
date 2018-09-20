@@ -30,7 +30,7 @@ import (
 func TestAckHeader(t *testing.T) {
 
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)

@@ -29,7 +29,7 @@ import (
 
 func TestAutoFlyToHeight(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -59,7 +59,7 @@ func TestAutoFlyToHeight(t *testing.T) {
 }
 func TestAutoTurnToYaw(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -90,7 +90,7 @@ func TestAutoTurnToYaw(t *testing.T) {
 
 func TestAutoTurnToYawAndHeightConcurrently(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("Control Connect failed with error %v", err)
@@ -127,7 +127,7 @@ func TestAutoTurnToYawAndHeightConcurrently(t *testing.T) {
 
 func TestAutoTurnByDeg(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
@@ -182,7 +182,7 @@ func TestCalcDeltas(t *testing.T) {
 
 func TestAutoFlyToXY(t *testing.T) {
 	drone := new(Tello)
-
+	log.Printf("Testing version: %s\n", TelloPackageVersion)
 	err := drone.ControlConnectDefault()
 	if err != nil {
 		log.Fatalf("CCD failed with error %v", err)
