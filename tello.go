@@ -567,7 +567,9 @@ func jsFloatToTello(fv float64) uint64 {
 
 func jsInt16ToTello(sv int16) uint64 {
 	// sv is in range -32768 to 32767, we need 660 to 1388 where 0 => 1024
-	return uint64((sv / 90) + 1024)
+	//return uint64((sv / 90) + 1024)
+	// Changed this as new info (Oct 18) suggests range should be 364 to 1684...
+	return uint64(float32(sv)/49.672 + 1024)
 }
 
 func (tello *Tello) sendStickUpdate() {
@@ -613,4 +615,8 @@ func (tello *Tello) sendStickUpdate() {
 
 	// send the command packet
 	tello.ctrlConn.Write(buff)
+
+	// log.Printf("Stick Vals: Lx: %d, Ly: %d, Rx: %d, Ry: %d - Stick packet: %x\n",
+	//	tello.ctrlLx, tello.ctrlLy, tello.ctrlRx, tello.ctrlRy, buff)
+
 }
