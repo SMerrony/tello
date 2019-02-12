@@ -342,9 +342,9 @@ func (tello *Tello) controlResponseListener() {
 						if !already {
 							tello.fileTemp.pieces[thisChunk.pieceNum].chunks = append(tello.fileTemp.pieces[thisChunk.pieceNum].chunks, thisChunk)
 							tello.fileTemp.accumSize += len(thisChunk.chunkData)
+							tello.fileTemp.pieces[thisChunk.pieceNum].numChunks++
 						}
 					}
-					tello.fileTemp.pieces[thisChunk.pieceNum].numChunks++
 					tello.fdMu.Unlock()
 					if tello.fileTemp.pieces[thisChunk.pieceNum].numChunks == 8 {
 						// piece has 8 chunks, it's complete
