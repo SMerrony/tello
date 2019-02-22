@@ -43,6 +43,8 @@ const (
 
 const keepAlivePeriodMs = 50
 
+const lightStrengthTimeout = time.Second * 5 // we assume connection lost if no update for this period
+
 // Tello holds the current state of a connection to a Tello drone.
 type Tello struct {
 	ctrlMu                         sync.RWMutex // this mutex protects the control fields
@@ -395,9 +397,11 @@ func (tello *Tello) controlResponseListener() {
 					tello.fd.WindState = tmpFd.WindState
 					tello.fdMu.Unlock()
 				case msgLightStrength:
+					// Light strength is sent regularly by the drone, seems a good candidate for "still here"-type functionality
 					// log.Printf("Light strength received - Size: %d, Type: %d\n", pkt.size13, pkt.packetType)
 					tello.fdMu.Lock()
 					tello.fd.LightStrength = uint8(pkt.payload[0])
+					tello.fd.LightStrengthUpdated = time.Now()
 					tello.fdMu.Unlock()
 				case msgLogConfig: // ignore for now
 				case msgLogHeader:
@@ -507,9 +511,27 @@ func (tello *Tello) sendDateTime() {
 }
 
 func (tello *Tello) keepAlive() {
+	var sinceLastLSupdate time.Duration
 	for {
 		if tello.ControlConnected() {
 			tello.sendStickUpdate()
+			tello.fdMu.RLock()
+			if tello.fd.LightStrengthUpdated.IsZero() {
+				// we've not started yet - fake it
+				//log.Println("DEBUG - No last light strength update time detected")
+				sinceLastLSupdate = time.Second
+			} else {
+				sinceLastLSupdate = time.Since(tello.fd.LightStrengthUpdated)
+			}
+			tello.fdMu.RUnlock()
+			if sinceLastLSupdate >= lightStrengthTimeout {
+				// too long since we last received a LS update, must have lost contact
+				log.Println("Seem to have lost contact")
+				log.Printf("Last update was %v ago", sinceLastLSupdate)
+				tello.StopStickListener()
+				tello.VideoDisconnect()
+				tello.ControlDisconnect()
+			}
 		} else {
 			return // we've disconnected
 		}

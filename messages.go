@@ -24,6 +24,7 @@ package tello
 import (
 	"encoding/binary"
 	"math"
+	"time"
 )
 
 const msgHdr = 0xcc // 204
@@ -218,6 +219,7 @@ type FlightData struct {
 	ImuCalibrationState      int8
 	ImuState                 bool
 	LightStrength            uint8
+	LightStrengthUpdated     time.Time
 	LowBatteryThreshold      uint8
 	MaxHeight                uint8
 	MVO                      MVOData
