@@ -33,7 +33,7 @@ import (
 )
 
 // TelloPackageVersion holds the semver of this package release.
-const TelloPackageVersion = "v0.9.2" // TODO Update with each release
+const TelloPackageVersion = "v0.9.3" // TODO Update with each release
 
 const (
 	defaultTelloAddr        = "192.168.10.1"

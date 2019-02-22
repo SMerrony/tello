@@ -228,6 +228,14 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 	return done, nil
 }
 
+// IsAutoTurning tests whether we are currently auto-navigating rotationally
+func (tello *Tello) IsAutoTurning() (set bool) {
+	tello.autoYawMu.RLock()
+	set = tello.autoYaw
+	tello.autoYawMu.RUnlock()
+	return set
+}
+
 // AutoTurnByDeg starts rotational movement by the specified amount degrees.
 // The amount should be between -180 and +180 degrees, where negative values cause an
 // anticlockwise rotation and vice-versa.
@@ -241,13 +249,9 @@ func (tello *Tello) AutoTurnByDeg(delta int16) (done chan bool, err error) {
 		return nil, errors.New("Turn amount must be between -180 and +180")
 	}
 
-	// are we already navigating?
-	tello.autoYawMu.RLock()
-	if tello.autoYaw {
-		tello.autoYawMu.RUnlock()
+	if tello.IsAutoTurning() {
 		return nil, errors.New("Already navigating rotationally")
 	}
-	tello.autoYawMu.RUnlock()
 
 	tello.fdMu.RLock()
 	adjustedTarget := tello.fd.IMU.Yaw
@@ -312,6 +316,14 @@ func (tello *Tello) CancelAutoFlyToXY() {
 	tello.autoXYMu.Unlock()
 }
 
+// IsAutoXY tests whether we are currently navigating horizontally
+func (tello *Tello) IsAutoXY() (set bool) {
+	tello.autoXYMu.RLock()
+	set = tello.autoXY
+	tello.autoXYMu.RUnlock()
+	return set
+}
+
 // AutoFlyToXY starts horizontal movement to the specified (X, Y) location
 // expressed in metres from the home point (which must have been previously set).
 // The func returns immediately and a Goroutine handles the navigation until either
@@ -325,15 +337,16 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 		return nil, errors.New("Horizontal navigation limit exceeded")
 	}
 	// are we already navigating?
+	if tello.IsAutoXY() {
+		return nil, errors.New("Already AutoFlying horizontally")
+	}
+
+	// is home position valid?
 	tello.autoXYMu.RLock()
-	already := tello.autoXY
 	valid := tello.homeValid
 	originX := tello.homeX
 	originY := tello.homeY
 	tello.autoXYMu.RUnlock()
-	if already {
-		return nil, errors.New("Already AutoFlying horizontally")
-	}
 	if !valid {
 		return nil, errors.New("Cannot AutoFly as home point has not be set (or is invalid)")
 	}
