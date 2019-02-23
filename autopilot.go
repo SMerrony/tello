@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	autopilotPeriodMs  = 25 // how often the autopilot(s) monitor/redirect the drone
+	autopilotPeriodMs  = 75 // how often the autopilot(s) monitor/redirect the drone
 	autoPilotSpeedFast = 32767
 	autoPilotSpeedSlow = 16384
 	// autoPilotSpeedVSlow = 8192
@@ -395,9 +395,9 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			case deltaX <= AutoXYToleranceM && deltaX >= -AutoXYToleranceM:
 				tello.ctrlRx = 0
 			case deltaX >= 1.5:
-				tello.ctrlRx = autoPilotSpeedSlow // full throttle if =>1m off target
+				tello.ctrlRx = autoPilotSpeedFast // full throttle if =>1m off target
 			case deltaX <= -1.5:
-				tello.ctrlRx = -autoPilotSpeedSlow // full throttle if =>1m off target
+				tello.ctrlRx = -autoPilotSpeedFast // full throttle if =>1m off target
 			case deltaX > AutoXYToleranceM:
 				tello.ctrlRx = autoPilotSpeedSlow // half throttle
 			case deltaX < -AutoXYToleranceM:
@@ -409,9 +409,9 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			case deltaY <= AutoXYToleranceM && deltaY >= -AutoXYToleranceM:
 				tello.ctrlRy = 0
 			case deltaY >= 1.5:
-				tello.ctrlRy = autoPilotSpeedSlow // full throttle if =>1m off target
+				tello.ctrlRy = autoPilotSpeedFast // full throttle if =>1m off target
 			case deltaY <= -1.5:
-				tello.ctrlRy = -autoPilotSpeedSlow // full throttle if =>1m off target
+				tello.ctrlRy = -autoPilotSpeedFast // full throttle if =>1m off target
 			case deltaY > AutoXYToleranceM:
 				tello.ctrlRy = autoPilotSpeedSlow // half throttle
 			case deltaY < -AutoXYToleranceM:
