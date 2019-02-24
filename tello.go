@@ -33,7 +33,7 @@ import (
 )
 
 // TelloPackageVersion holds the semver of this package release.
-const TelloPackageVersion = "v0.9.3" // TODO Update with each release
+const TelloPackageVersion = "v0.9.4" // TODO Update with each release
 
 const (
 	defaultTelloAddr        = "192.168.10.1"
@@ -41,7 +41,7 @@ const (
 	defaultLocalControlPort = 8800
 )
 
-const keepAlivePeriodMs = 50
+const keepAlivePeriodMs = 40
 
 const lightStrengthTimeout = time.Second * 5 // we assume connection lost if no update for this period
 

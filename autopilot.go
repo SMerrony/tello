@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	autopilotPeriodMs  = 75 // how often the autopilot(s) monitor/redirect the drone
+	autopilotPeriodMs  = keepAlivePeriodMs * 2 // how often the autopilot(s) monitor/redirect the drone
 	autoPilotSpeedFast = 32767
 	autoPilotSpeedSlow = 16384
 	// autoPilotSpeedVSlow = 8192
@@ -41,6 +41,8 @@ const (
 	AutoXYLimitM = 200 // 200m
 	// AutoXYToleranceM is the maximum accuracy we try to attain in XY navigation in metres
 	AutoXYToleranceM = 0.3
+	// AutoXYNearTargetM is how close to the target we slow down for finer navigation
+	AutoXYNearTargetM = 3.0
 )
 
 // CancelAutoFlyToHeight stops any in-flight AutoFlyToHeight navigation.
@@ -364,6 +366,11 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 	//log.Println("AutoXY set - starting goroutine")
 
 	go func() {
+		var (
+			currentYaw         int16
+			currentX, currentY float32
+			lowLight           bool
+		)
 		for {
 			// has autoflight been cancelled?
 			tello.autoXYMu.RLock()
@@ -382,10 +389,19 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 
 			// get current yaw & position
 			tello.fdMu.RLock()
-			currentYaw := tello.fd.IMU.Yaw
-			currentX := tello.fd.MVO.PositionX
-			currentY := tello.fd.MVO.PositionY
+			currentYaw = tello.fd.IMU.Yaw
+			currentX = tello.fd.MVO.PositionX
+			currentY = tello.fd.MVO.PositionY
+			lowLight = tello.fd.LightStrength == 1
 			tello.fdMu.RUnlock()
+
+			if lowLight { // cancel autoflight
+				log.Println("Cancelling AutoXY flight due to low light")
+				tello.autoXYMu.Lock()
+				tello.autoXY = false
+				tello.autoXYMu.Unlock()
+				continue
+			}
 
 			deltaX, deltaY := calcXYdeltas(currentYaw, currentX, currentY, targetX, targetY)
 
@@ -394,10 +410,10 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			switch {
 			case deltaX <= AutoXYToleranceM && deltaX >= -AutoXYToleranceM:
 				tello.ctrlRx = 0
-			case deltaX >= 1.5:
-				tello.ctrlRx = autoPilotSpeedFast // full throttle if =>1m off target
-			case deltaX <= -1.5:
-				tello.ctrlRx = -autoPilotSpeedFast // full throttle if =>1m off target
+			case deltaX >= AutoXYNearTargetM:
+				tello.ctrlRx = autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
+			case deltaX <= -AutoXYNearTargetM:
+				tello.ctrlRx = -autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
 			case deltaX > AutoXYToleranceM:
 				tello.ctrlRx = autoPilotSpeedSlow // half throttle
 			case deltaX < -AutoXYToleranceM:
@@ -408,10 +424,10 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			switch {
 			case deltaY <= AutoXYToleranceM && deltaY >= -AutoXYToleranceM:
 				tello.ctrlRy = 0
-			case deltaY >= 1.5:
-				tello.ctrlRy = autoPilotSpeedFast // full throttle if =>1m off target
-			case deltaY <= -1.5:
-				tello.ctrlRy = -autoPilotSpeedFast // full throttle if =>1m off target
+			case deltaY >= AutoXYNearTargetM:
+				tello.ctrlRy = autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
+			case deltaY <= -AutoXYNearTargetM:
+				tello.ctrlRy = -autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
 			case deltaY > AutoXYToleranceM:
 				tello.ctrlRy = autoPilotSpeedSlow // half throttle
 			case deltaY < -AutoXYToleranceM:
