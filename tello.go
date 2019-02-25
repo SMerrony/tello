@@ -251,6 +251,13 @@ func (tello *Tello) StreamFlightData(asAvailable bool, periodMs time.Duration) (
 	} else {
 		go func() {
 			for {
+				if !tello.ControlConnected() {
+					tello.fdMu.Lock()
+					tello.fdStreaming = false
+					tello.fdMu.Unlock()
+					close(fdChan)
+					return
+				}
 				tello.fdMu.RLock()
 				select {
 				case fdChan <- tello.fd:
@@ -528,9 +535,10 @@ func (tello *Tello) keepAlive() {
 				// too long since we last received a LS update, must have lost contact
 				log.Println("Seem to have lost contact")
 				log.Printf("Last update was %v ago", sinceLastLSupdate)
-				tello.StopStickListener()
-				tello.VideoDisconnect()
-				tello.ControlDisconnect()
+				tello.ctrlMu.Lock()
+				tello.ctrlConnected = false
+				tello.ctrlMu.Unlock()
+				return // disconnected - so stop this Goroutine
 			}
 		} else {
 			return // we've disconnected
