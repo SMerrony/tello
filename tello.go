@@ -58,10 +58,11 @@ type Tello struct {
 	videoChan                      chan []byte
 	stickChan                      chan StickMessage // this will receive stick updates from the user
 	stickListening                 bool              // are we currently listening on stickChan?
-	stopStickListener              chan bool         // internal singal to stop the stick listener
-	fdMu                           sync.RWMutex      // this mutex protects the flight data fields
-	fd                             FlightData        // our private amalgamated store of the latest data
-	fdStreaming                    bool              // are we currently sending FlightData out?
+	stickListeningMu               sync.RWMutex
+	stopStickListener              chan bool    // internal singal to stop the stick listener
+	fdMu                           sync.RWMutex // this mutex protects the flight data fields
+	fd                             FlightData   // our private amalgamated store of the latest data
+	fdStreaming                    bool         // are we currently sending FlightData out?
 	files                          []fileData
 	fileTemp                       fileInternal
 	autoHeightMu, autoYawMu        sync.RWMutex
@@ -553,7 +554,9 @@ func (tello *Tello) stickListener() {
 		case sm := <-tello.stickChan:
 			tello.UpdateSticks(sm)
 		case <-tello.stopStickListener:
+			tello.stickListeningMu.Lock()
 			tello.stickListening = false
+			tello.stickListeningMu.Unlock()
 			return
 		}
 	}
@@ -562,10 +565,15 @@ func (tello *Tello) stickListener() {
 // StartStickListener starts a Goroutine which listens for StickMessages on a channel
 // and applies them to the Tello.  All four axes are updated on each message recieved.
 func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) {
-	if tello.stickListening {
+	tello.stickListeningMu.RLock()
+	already := tello.stickListening
+	tello.stickListeningMu.RUnlock()
+	if already {
 		return nil, errors.New("Cannot start another StickListener, already one running")
 	}
+	tello.stickListeningMu.Lock()
 	tello.stickListening = true
+	tello.stickListeningMu.Unlock()
 	// start the stick listener
 	tello.stopStickListener = make(chan bool)
 	tello.stickChan = make(chan StickMessage, 10)
@@ -575,9 +583,11 @@ func (tello *Tello) StartStickListener() (sChan chan<- StickMessage, err error) 
 
 // StopStickListener stops a Goroutine started by StartStickListener().
 func (tello *Tello) StopStickListener() {
+	tello.stickListeningMu.Lock()
 	if tello.stickListening {
 		tello.stopStickListener <- true
 	}
+	tello.stickListeningMu.Unlock()
 }
 
 // UpdateSticks does a one-off update of the stick values which are then sent to the Tello.

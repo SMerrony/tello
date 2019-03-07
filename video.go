@@ -41,6 +41,7 @@ func (tello *Tello) VideoConnect(udpAddr string, droneUDPPort int) (<-chan []byt
 	}
 	tello.videoConn, err = net.ListenUDP("udp", droneAddr)
 	if err != nil {
+		log.Printf("Error: VideoConnect - ListenUDP failed with %v\n", err)
 		return nil, err
 	}
 	tello.videoStopChan = make(chan bool, 2)
@@ -68,6 +69,7 @@ func (tello *Tello) videoResponseListener() {
 		vbuf := make([]byte, 2048)
 		if tello.videoConn == nil {
 			// must have been closed
+			log.Println("Info: videoResponseListener closing")
 			close(tello.videoChan)
 			return
 		}
