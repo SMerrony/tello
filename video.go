@@ -81,6 +81,10 @@ func (tello *Tello) videoResponseListener() {
 		}
 		select {
 		case tello.videoChan <- vbuf[2:n]:
+		case <-tello.videoStopChan:
+			log.Println("Info: Closing Video Channel")
+			close(tello.videoChan)
+			return
 		default: // so we don't block
 		}
 	}
