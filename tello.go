@@ -63,7 +63,8 @@ type Tello struct {
 	fdMu                           sync.RWMutex // this mutex protects the flight data fields
 	fd                             FlightData   // our private amalgamated store of the latest data
 	fdStreaming                    bool         // are we currently sending FlightData out?
-	files                          []fileData
+	files                          []FileData
+	filesListeners                 map[chan FileData]chan FileData
 	fileTemp                       fileInternal
 	autoHeightMu, autoYawMu        sync.RWMutex
 	autoHeight, autoYaw            bool         // flags to indicate if autoflight is active
@@ -88,6 +89,7 @@ func (tello *Tello) ControlConnect(udpAddr string, droneUDPPort int, localUDPPor
 		return errors.New("Tello connection attempt already in progress")
 	}
 	tello.ctrlMu.RUnlock()
+	tello.filesListeners = map[chan FileData]chan FileData{}
 
 	droneAddr, err := net.ResolveUDPAddr("udp", udpAddr+":"+strconv.Itoa(droneUDPPort))
 	if err != nil {
@@ -153,6 +155,12 @@ func (tello *Tello) ControlDisconnect() {
 	tello.ctrlConn.Close()
 	tello.ctrlConnected = false
 	tello.ctrlMu.Unlock()
+	tello.fdMu.Lock()
+	for l := range tello.filesListeners {
+		delete(tello.filesListeners, l)
+		close(l)
+	}
+	tello.fdMu.Unlock()
 }
 
 // ControlConnected returns true if we are currently connected.
@@ -318,11 +326,11 @@ func (tello *Tello) controlResponseListener() {
 				case msgFileSize: // initial response to Take Picture command
 					ft, fs, fID := payloadToFileInfo(pkt.payload)
 					//log.Printf("Take pic response: type: %d, size: %d, ID: %d\n", ft, fs, fID)
-					if ft != ftJPEG {
+					if ft != FtJPEG {
 						log.Printf("Unexpected file type <%d> received in response to take picture command\n", ft)
 					} else {
 						// set up for receiving picture chunks
-						// tello.files[fID] = fileData{fileType: ft, fileSize: fs, fileBytes: make([]byte, fs)}
+						// tello.files[fID] = FileData{FileType: ft, FileSize: fs, FileBytes: make([]byte, fs)}
 						tello.fdMu.Lock()
 						//tello.filesBusy = true
 						tello.fileTemp.fID = fID

@@ -80,12 +80,12 @@ func (tello *Tello) sendFileDone(fID uint16, size int) {
 
 // reassembleFile reassembles a chunked file in tello.fileTemp into a contiguous byte array in tello.files
 func (tello *Tello) reassembleFile() {
-	var fd fileData
+	var fd FileData
 	tello.fdMu.Lock()
 	defer tello.fdMu.Unlock()
 
-	fd.fileType = tello.fileTemp.filetype
-	fd.fileSize = tello.fileTemp.accumSize
+	fd.FileType = tello.fileTemp.filetype
+	fd.FileSize = tello.fileTemp.accumSize
 	// we expect the pieces to be in order
 	for _, p := range tello.fileTemp.pieces {
 		// the chunks may not be in order, we must sort them
@@ -95,17 +95,22 @@ func (tello *Tello) reassembleFile() {
 			})
 		}
 		for _, c := range p.chunks {
-			fd.fileBytes = append(fd.fileBytes, c.chunkData...)
+			fd.FileBytes = append(fd.FileBytes, c.chunkData...)
 		}
 	}
 	tello.files = append(tello.files, fd)
 	tello.fileTemp = fileInternal{}
+	for l := range tello.filesListeners { // Notify file listeners
+		l <- fd
+	}
 }
 
 // NumPics returns the number of JPEG pictures we are storing in memory
 func (tello *Tello) NumPics() (np int) {
+	tello.fdMu.Lock()
+	defer tello.fdMu.Unlock()
 	for _, f := range tello.files {
-		if f.fileType == ftJPEG {
+		if f.FileType == FtJPEG {
 			np++
 		}
 	}
@@ -116,10 +121,12 @@ func (tello *Tello) NumPics() (np int) {
 // and a generated index number. It returns the number of pictures written &/or an error.
 // If there is no error, the pictures are removed from memory.
 func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
+	tello.fdMu.Lock()
+	defer tello.fdMu.Unlock()
 	for _, f := range tello.files {
-		if f.fileType == ftJPEG {
+		if f.FileType == FtJPEG {
 			filename := fmt.Sprintf("%s_%d.jpg", prefix, np)
-			err = ioutil.WriteFile(filename, f.fileBytes, 0644)
+			err = ioutil.WriteFile(filename, f.FileBytes, 0644)
 			if err != nil {
 				return 0, err
 			}
@@ -128,4 +135,30 @@ func (tello *Tello) SaveAllPics(prefix string) (np int, err error) {
 	}
 	tello.files = nil
 	return np, nil
+}
+
+// GrabFiles returns the latest batch of files reassembled, removing them from memory.
+func (tello *Tello) GrabFiles() []FileData {
+	tello.fdMu.Lock()
+	defer tello.fdMu.Unlock()
+	res := make([]FileData, 0, len(tello.files))
+	for _, f := range tello.files {
+		res = append(res, f)
+	}
+	tello.files = tello.files[:0] // Reset all reassembled files (keeping capacity)
+	return res
+}
+
+// ListenFiles returns a channel that will be filled when a new file is reassembled, and a function to stop listening
+func (tello *Tello) ListenFiles() (chan FileData, func()) {
+	tello.fdMu.Lock()
+	defer tello.fdMu.Unlock()
+	res := make(chan FileData)
+	tello.filesListeners[res] = res
+	return res, func() {
+		if _, present := tello.filesListeners[res]; present {
+			delete(tello.filesListeners, res)
+			close(res)
+		}
+	}
 }
