@@ -60,6 +60,27 @@ func (tello *Tello) CancelAutoFlyToHeight() {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
 func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
+	return tello.AutoFlyToHeightConfig(dm, 1.0, 1.0)
+}
+
+// AutoFlyToHeightConfig starts vertical movement to the specified height in decimetres
+// (so a value of 10 means 1m).
+// A speed value of 1 makes the drone go as fast as possible to target (slowing down when close to it),
+// and a lower value makes the drone go slower.
+// tolerance sets the tolerance to accept the reached height, measured in decimeters (0 is OK, usually)
+// The func returns immediately and a Goroutine handles the navigation until either
+// it is complete or cancelled via CancelAutoFlyToHeight().
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (or has been cancelled).
+func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int16) (done chan bool, err error) {
+	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
+		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
+		speed = 0.25
+	}
+	if speed > 1 {
+		log.Println("WARN: AutoFly speed too high, decreasing to 1.0 (max speed)")
+		speed = 1
+	}
 	//log.Printf("AutoFlyToHeight called with height: %d\n", dm)
 	if dm > AutoHeightLimitDm || dm < -AutoHeightLimitDm {
 		return nil, errors.New("Verical navigation limit exceeded")
@@ -76,7 +97,7 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 	tello.autoHeight = true
 	tello.autoHeightMu.Unlock()
 
-	done = make(chan bool, 1) // buffered so send doesn't block
+	done = make(chan bool) // won't block as we will close it to notify listeners
 
 	//log.Println("Autoheight set - starting goroutine")
 
@@ -93,7 +114,7 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 				tello.ctrlLy = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
-				done <- true
+				close(done)
 				return
 			}
 
@@ -105,14 +126,14 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 			tello.ctrlMu.Lock()
 			switch {
 			case delta > 4:
-				tello.ctrlLy = autoPilotSpeedFast // full throttle if >40cm off target
+				tello.ctrlLy = int16(autoPilotSpeedFast * speed) // full throttle if >40cm off target
 			case delta > 0:
-				tello.ctrlLy = autoPilotSpeedSlow // half throttle if <40cm off target
+				tello.ctrlLy = int16(autoPilotSpeedSlow * speed) // half throttle if <40cm off target
 			case delta < -4:
-				tello.ctrlLy = -autoPilotSpeedFast
+				tello.ctrlLy = int16(-autoPilotSpeedFast * speed)
 			case delta < 0:
-				tello.ctrlLy = -autoPilotSpeedSlow
-			case delta == 0: // might need some 'tolerance' here?
+				tello.ctrlLy = int16(-autoPilotSpeedSlow * speed)
+			case int16(math.Abs(float64(delta))) <= tolerance: // might need some 'tolerance' here?
 				// we're there! Cancel...
 				tello.autoHeightMu.Lock()
 				tello.autoHeight = false
@@ -143,6 +164,27 @@ func (tello *Tello) CancelAutoTurn() {
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
 func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
+	return tello.AutoTurnToYawConfig(targetYaw, 1.0, 0)
+}
+
+// AutoTurnToYawConfig starts rotational movement to the specified yaw in degrees.
+// The yaw should be between -180 and +180 degrees.
+// A speed value of 1 makes the drone go as fast as possible to target (slowing down when close to it),
+// and a lower value makes the drone go slower.
+// tolerance sets the tolerance to accept the reached height, measured in decimeters (0 is OK, usually)
+// The func returns immediately and a Goroutine handles the navigation.
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (may have been cancelled).
+// You may explicitly cancel this operation via CancelAutoTurn().
+func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, tolerance int16) (done chan bool, err error) {
+	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
+		log.Println("WARN: AutoTurn speed too low, increasing to 0.25")
+		speed = 0.25
+	}
+	if speed > 1 {
+		log.Println("WARN: AutoTurn speed too high, decreasing to 1.0 (max speed)")
+		speed = 1
+	}
 	//log.Printf("AutoTurnToYaw called with target: %d\n", targetYaw)
 	if targetYaw < -180 || targetYaw > 180 {
 		return nil, errors.New("Target yaw must be between -180 and +180")
@@ -164,7 +206,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 	tello.autoYaw = true
 	tello.autoYawMu.Unlock()
 
-	done = make(chan bool, 1) // buffered so send doesn't block
+	done = make(chan bool) // won't block as we will close it to notify listeners
 
 	//log.Println("autoYaw set - starting goroutine")
 
@@ -181,7 +223,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 				tello.ctrlLx = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
-				done <- true
+				close(done)
 				return
 			}
 
@@ -198,7 +240,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 			case absDelta <= 180: //
 			case delta > 0:
 				delta = absDelta - 360
-			case delta > 0:
+			case delta < 0:
 				delta = 360 - absDelta
 			}
 
@@ -207,14 +249,14 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 			tello.ctrlMu.Lock()
 			switch {
 			case delta > 10:
-				tello.ctrlLx = autoPilotSpeedFast
+				tello.ctrlLx = int16(autoPilotSpeedFast * speed)
 			case delta > 0:
-				tello.ctrlLx = autoPilotSpeedSlow
+				tello.ctrlLx = int16(autoPilotSpeedSlow * speed)
 			case delta < -10:
-				tello.ctrlLx = -autoPilotSpeedFast
+				tello.ctrlLx = int16(-autoPilotSpeedFast * speed)
 			case delta < 0:
-				tello.ctrlLx = -autoPilotSpeedSlow
-			case delta == 0: // might need some 'tolerance' here?
+				tello.ctrlLx = int16(-autoPilotSpeedSlow * speed)
+			case int16(math.Abs(float64(delta))) <= tolerance: // might need some 'tolerance' here?
 				// we're there! Cancel...
 				tello.autoYawMu.Lock()
 				tello.autoYaw = false
@@ -333,6 +375,27 @@ func (tello *Tello) IsAutoXY() (set bool) {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
 func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err error) {
+	return tello.AutoFlyToXYConfig(targetX, targetY, 1.0, AutoXYToleranceM)
+}
+
+// AutoFlyToXYConfig starts horizontal movement to the specified (X, Y) location
+// expressed in metres from the home point (which must have been previously set).
+// A speed value of 1 makes the drone go as fast as possible to target (slowing down when close to it),
+// and a lower value makes the drone go slower.
+// tolerance multiplies the default tolerance for considering the target reached.
+// The func returns immediately and a Goroutine handles the navigation until either
+// it is complete or cancelled via CancelFlyToXY().
+// The caller may optionally listen on the 'done' channel for a signal that
+// the navigation is complete (or has been cancelled).
+func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32) (done chan bool, err error) {
+	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
+		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
+		speed = 0.25
+	}
+	if speed > 1 {
+		log.Println("WARN: AutoFly speed too high, decreasing to 1.0 (max speed)")
+		speed = 1
+	}
 	//log.Printf("FlyToXY called with XY: %d\n", dm)
 	if targetX > AutoXYLimitM || targetY > AutoXYLimitM ||
 		targetX < -AutoXYLimitM || targetY < -AutoXYLimitM {
@@ -361,7 +424,7 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 	targetX += originX
 	targetY += originY
 
-	done = make(chan bool, 1) // buffered so send doesn't block
+	done = make(chan bool) // won't block as we will close it to notify listeners
 
 	//log.Println("AutoXY set - starting goroutine")
 
@@ -383,7 +446,7 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 				tello.ctrlRy = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
-				done <- true
+				close(done)
 				return
 			}
 
@@ -408,30 +471,30 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 			tello.ctrlMu.Lock()
 
 			switch {
-			case deltaX <= AutoXYToleranceM && deltaX >= -AutoXYToleranceM:
+			case deltaX <= tolerance && deltaX >= -tolerance:
 				tello.ctrlRx = 0
 			case deltaX >= AutoXYNearTargetM:
-				tello.ctrlRx = autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRx = int16(autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
 			case deltaX <= -AutoXYNearTargetM:
-				tello.ctrlRx = -autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
-			case deltaX > AutoXYToleranceM:
-				tello.ctrlRx = autoPilotSpeedSlow // half throttle
-			case deltaX < -AutoXYToleranceM:
-				tello.ctrlRx = -autoPilotSpeedSlow // half throttle
+				tello.ctrlRx = int16(-autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+			case deltaX > tolerance:
+				tello.ctrlRx = int16(autoPilotSpeedSlow * speed) // half throttle
+			case deltaX < -tolerance:
+				tello.ctrlRx = int16(-autoPilotSpeedSlow * speed) // half throttle
 			default:
 				log.Fatalf("Invalid state in AutoFlyToXY() - deltaX=%f", deltaX)
 			}
 			switch {
-			case deltaY <= AutoXYToleranceM && deltaY >= -AutoXYToleranceM:
+			case deltaY <= tolerance && deltaY >= -tolerance:
 				tello.ctrlRy = 0
 			case deltaY >= AutoXYNearTargetM:
-				tello.ctrlRy = autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRy = int16(autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
 			case deltaY <= -AutoXYNearTargetM:
-				tello.ctrlRy = -autoPilotSpeedFast // full throttle if =>AutoXYNearTargetM off target
-			case deltaY > AutoXYToleranceM:
-				tello.ctrlRy = autoPilotSpeedSlow // half throttle
-			case deltaY < -AutoXYToleranceM:
-				tello.ctrlRy = -autoPilotSpeedSlow // half throttle
+				tello.ctrlRy = int16(-autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+			case deltaY > tolerance:
+				tello.ctrlRy = int16(autoPilotSpeedSlow * speed) // half throttle
+			case deltaY < -tolerance:
+				tello.ctrlRy = int16(-autoPilotSpeedSlow * speed) // half throttle
 			default:
 				log.Fatalf("Invalid state in AutoFlyToXY() - deltaY=%f", deltaY)
 			}

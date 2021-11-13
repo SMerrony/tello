@@ -40,12 +40,13 @@ func TestAutoFlyToHeight(t *testing.T) {
 	drone.TakeOff()
 	time.Sleep(5 * time.Second)
 
-	if _, err = drone.AutoFlyToHeight(5); err != nil { // should go down to .5m
+	done, err := drone.AutoFlyToHeight(5)
+	if err != nil { // should go down to .5m
 		t.Errorf("Error %v calling AutoFlyToHeight(5)", err)
 	}
-	time.Sleep(5 * time.Second)
+	<-done
 
-	done, err := drone.AutoFlyToHeight(15)
+	done, err = drone.AutoFlyToHeight(15)
 	if err != nil { // should go up to 1.5m
 		t.Errorf("Error %v calling AutoFlyToHeight(15)", err)
 	}
@@ -203,7 +204,7 @@ func TestAutoFlyToXY(t *testing.T) {
 		t.Errorf("Error %v calling SetOrigin()", err)
 	}
 
-	done, err = drone.AutoFlyToXY(0, 0.75)
+	done, err = drone.AutoFlyToXYConfig(0, 0.75, 0.25, 0.2)
 	if err != nil { // should fly forward 75cm
 		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.75)", err)
 	}
@@ -211,7 +212,7 @@ func TestAutoFlyToXY(t *testing.T) {
 
 	log.Println("Navigation 1 completion notified")
 
-	done, err = drone.AutoFlyToXY(0, 0.0)
+	done, err = drone.AutoFlyToXYConfig(0, 0.0, 0.25, 0.2)
 	if err != nil { // should fly back
 		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.0)", err)
 	}
