@@ -111,11 +111,11 @@ func TestAutoTurnToYawAndHeightConcurrently(t *testing.T) {
 		log.Fatalf("AutoTurnToYaw failed with error %v", err)
 	}
 
-	var hDone, yDone bool
-	for !hDone && !yDone {
+	var hDone, yDone *error
+	for hDone == nil && yDone == nil {
 		select {
-		case hDone = <-hDoneC:
-		case yDone = <-yDoneC:
+		case *hDone = <-hDoneC:
+		case *yDone = <-yDoneC:
 		}
 	}
 

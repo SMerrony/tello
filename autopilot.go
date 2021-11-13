@@ -59,7 +59,7 @@ func (tello *Tello) CancelAutoFlyToHeight() {
 // it is complete or cancelled via CancelAutoFlyToHeight().
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
-func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
+func (tello *Tello) AutoFlyToHeight(dm int16) (done chan error, err error) {
 	return tello.AutoFlyToHeightConfig(dm, 1.0, 1.0)
 }
 
@@ -72,7 +72,7 @@ func (tello *Tello) AutoFlyToHeight(dm int16) (done chan bool, err error) {
 // it is complete or cancelled via CancelAutoFlyToHeight().
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
-func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int16) (done chan bool, err error) {
+func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int16) (done chan error, err error) {
 	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
 		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
 		speed = 0.25
@@ -97,11 +97,12 @@ func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int
 	tello.autoHeight = true
 	tello.autoHeightMu.Unlock()
 
-	done = make(chan bool) // won't block as we will close it to notify listeners
+	done = make(chan error, 1) // buffered so it won't block
 
 	//log.Println("Autoheight set - starting goroutine")
 
 	go func() {
+		returnedError := errors.New("AutoFlyToHeight cancelled")
 		for {
 			// has autoflight been cancelled?
 			tello.autoHeightMu.RLock()
@@ -114,6 +115,7 @@ func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int
 				tello.ctrlLy = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
+				done <- returnedError
 				close(done)
 				return
 			}
@@ -135,6 +137,7 @@ func (tello *Tello) AutoFlyToHeightConfig(dm int16, speed float32, tolerance int
 				tello.ctrlLy = int16(-autoPilotSpeedSlow * speed)
 			case int16(math.Abs(float64(delta))) <= tolerance: // might need some 'tolerance' here?
 				// we're there! Cancel...
+				returnedError = nil
 				tello.autoHeightMu.Lock()
 				tello.autoHeight = false
 				tello.autoHeightMu.Unlock()
@@ -163,7 +166,7 @@ func (tello *Tello) CancelAutoTurn() {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
+func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan error, err error) {
 	return tello.AutoTurnToYawConfig(targetYaw, 1.0, 0)
 }
 
@@ -176,7 +179,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan bool, err error) {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, tolerance int16) (done chan bool, err error) {
+func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, tolerance int16) (done chan error, err error) {
 	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
 		log.Println("WARN: AutoTurn speed too low, increasing to 0.25")
 		speed = 0.25
@@ -206,23 +209,25 @@ func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, toleranc
 	tello.autoYaw = true
 	tello.autoYawMu.Unlock()
 
-	done = make(chan bool) // won't block as we will close it to notify listeners
+	done = make(chan error, 1) // buffered so it won't block
 
 	//log.Println("autoYaw set - starting goroutine")
 
 	go func() {
+		returnedError := errors.New("AutoFlyToYaw cancelled")
 		for {
 			// has autoflight been cancelled?
 			tello.autoYawMu.RLock()
 			autoY := tello.autoYaw
 			tello.autoYawMu.RUnlock()
 			if !autoY {
-				log.Println("Cancelled")
+				//log.Println("Cancelled")
 				// stop rotational movement
 				tello.ctrlMu.Lock()
 				tello.ctrlLx = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
+				done <- returnedError
 				close(done)
 				return
 			}
@@ -258,6 +263,7 @@ func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, toleranc
 				tello.ctrlLx = int16(-autoPilotSpeedSlow * speed)
 			case int16(math.Abs(float64(delta))) <= tolerance: // might need some 'tolerance' here?
 				// we're there! Cancel...
+				returnedError = nil
 				tello.autoYawMu.Lock()
 				tello.autoYaw = false
 				tello.autoYawMu.Unlock()
@@ -287,7 +293,7 @@ func (tello *Tello) IsAutoTurning() (set bool) {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnByDeg(delta int16) (done chan bool, err error) {
+func (tello *Tello) AutoTurnByDeg(delta int16) (done chan error, err error) {
 
 	if delta < -180 || delta > 180 {
 		return nil, errors.New("Turn amount must be between -180 and +180")
@@ -374,7 +380,7 @@ func (tello *Tello) IsAutoXY() (set bool) {
 // it is complete or cancelled via CancelFlyToXY().
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
-func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err error) {
+func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan error, err error) {
 	return tello.AutoFlyToXYConfig(targetX, targetY, 1.0, AutoXYToleranceM)
 }
 
@@ -387,7 +393,7 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan bool, err e
 // it is complete or cancelled via CancelFlyToXY().
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
-func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32) (done chan bool, err error) {
+func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32) (done chan error, err error) {
 	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
 		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
 		speed = 0.25
@@ -424,7 +430,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 	targetX += originX
 	targetY += originY
 
-	done = make(chan bool) // won't block as we will close it to notify listeners
+	done = make(chan error, 1) // won't block as we will close it to notify listeners
 
 	//log.Println("AutoXY set - starting goroutine")
 
@@ -434,6 +440,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			currentX, currentY float32
 			lowLight           bool
 		)
+		returnedError := errors.New("AutoFlyToXY cancelled")
 		for {
 			// has autoflight been cancelled?
 			tello.autoXYMu.RLock()
@@ -446,6 +453,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 				tello.ctrlRy = 0
 				tello.ctrlMu.Unlock()
 				tello.sendStickUpdate()
+				done <- returnedError
 				close(done)
 				return
 			}
@@ -459,7 +467,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			tello.fdMu.RUnlock()
 
 			if lowLight { // cancel autoflight
-				log.Println("Cancelling AutoXY flight due to low light")
+				returnedError = errors.New("cancelling AutoXY flight due to low light")
 				tello.autoXYMu.Lock()
 				tello.autoXY = false
 				tello.autoXYMu.Unlock()
@@ -504,6 +512,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 
 			if tello.ctrlRx == 0.0 && tello.ctrlRy == 0.0 {
 				// we're there! Cancel...
+				returnedError = nil
 				tello.autoXYMu.Lock()
 				tello.autoXY = false
 				tello.autoXYMu.Unlock()
