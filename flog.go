@@ -106,7 +106,7 @@ func (tello *Tello) parseLogPacket(data []byte) {
 }
 
 // QuatToEulerDeg converts a quaternion set into pitch, roll & yaw expressed in degrees
-func QuatToEulerDeg(qX, qY, qZ, qW float32) (pitch, roll, yaw int) {
+func QuatToEulerDeg(qX, qY, qZ, qW float32) (pitch, roll, yaw float32) {
 	const degree = math.Pi / 180.0
 	qqX := float64(qX)
 	qqY := float64(qY)
@@ -118,7 +118,7 @@ func QuatToEulerDeg(qX, qY, qZ, qW float32) (pitch, roll, yaw int) {
 
 	sinR := 2.0 * (qqW*qqX + qqY*qqZ)
 	cosR := 1 - 2*(sqX+sqY)
-	roll = int(math.Round(math.Atan2(sinR, cosR) / degree))
+	roll = float32(math.Round(math.Atan2(sinR, cosR) / degree))
 
 	sinP := 2.0 * (qqW*qqY - qqZ*qqX)
 	if sinP > 1.0 {
@@ -127,17 +127,17 @@ func QuatToEulerDeg(qX, qY, qZ, qW float32) (pitch, roll, yaw int) {
 	if sinP < -1.0 {
 		sinP = -1
 	}
-	pitch = int(math.Round(math.Asin(sinP) / degree))
+	pitch = float32(math.Round(math.Asin(sinP) / degree))
 
 	sinY := 2.0 * (qqW*qqZ + qqX*qqY)
 	cosY := 1.0 - 2*(sqY+sqZ)
-	yaw = int(math.Round(math.Atan2(sinY, cosY) / degree))
+	yaw = float32(math.Round(math.Atan2(sinY, cosY) / degree))
 
 	return pitch, roll, yaw
 }
 
 // faster func just for getting yaw internally
-func quatToYawDeg(qX, qY, qZ, qW float32) (yaw int16) {
+func quatToYawDeg(qX, qY, qZ, qW float32) (yaw float32) {
 	const degree = math.Pi / 180.0
 	qqX := float64(qX)
 	qqY := float64(qY)
@@ -148,7 +148,7 @@ func quatToYawDeg(qX, qY, qZ, qW float32) (yaw int16) {
 
 	sinY := 2.0 * (qqW*qqZ + qqX*qqY)
 	cosY := 1.0 - 2*(sqY+sqZ)
-	yaw = int16(math.Round(math.Atan2(sinY, cosY) / degree))
+	yaw = float32(math.Round(math.Atan2(sinY, cosY) / degree))
 
 	return yaw
 }

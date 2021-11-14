@@ -166,7 +166,7 @@ func (tello *Tello) CancelAutoTurn() {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan error, err error) {
+func (tello *Tello) AutoTurnToYaw(targetYaw float32) (done chan error, err error) {
 	return tello.AutoTurnToYawConfig(targetYaw, 1.0, 0)
 }
 
@@ -179,7 +179,7 @@ func (tello *Tello) AutoTurnToYaw(targetYaw int16) (done chan error, err error) 
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, tolerance int16) (done chan error, err error) {
+func (tello *Tello) AutoTurnToYawConfig(targetYaw, speed float32, tolerance int16) (done chan error, err error) {
 	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
 		log.Println("WARN: AutoTurn speed too low, increasing to 0.25")
 		speed = 0.25
@@ -240,7 +240,7 @@ func (tello *Tello) AutoTurnToYawConfig(targetYaw int16, speed float32, toleranc
 			}
 
 			delta := adjustedTarget - adjustedCurrent
-			absDelta := int16Abs(delta)
+			absDelta := float32Abs(delta)
 			switch {
 			case absDelta <= 180: //
 			case delta > 0:
@@ -293,7 +293,7 @@ func (tello *Tello) IsAutoTurning() (set bool) {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (may have been cancelled).
 // You may explicitly cancel this operation via CancelAutoTurn().
-func (tello *Tello) AutoTurnByDeg(delta int16) (done chan error, err error) {
+func (tello *Tello) AutoTurnByDeg(delta float32) (done chan error, err error) {
 
 	if delta < -180 || delta > 180 {
 		return nil, errors.New("Turn amount must be between -180 and +180")
@@ -381,7 +381,7 @@ func (tello *Tello) IsAutoXY() (set bool) {
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
 func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan error, err error) {
-	return tello.AutoFlyToXYConfig(targetX, targetY, 1.0, AutoXYToleranceM)
+	return tello.AutoFlyToXYConfig(targetX, targetY, 1.0, 1.0, AutoXYToleranceM)
 }
 
 // AutoFlyToXYConfig starts horizontal movement to the specified (X, Y) location
@@ -393,14 +393,22 @@ func (tello *Tello) AutoFlyToXY(targetX, targetY float32) (done chan error, err 
 // it is complete or cancelled via CancelFlyToXY().
 // The caller may optionally listen on the 'done' channel for a signal that
 // the navigation is complete (or has been cancelled).
-func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32) (done chan error, err error) {
-	if speed < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
+func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speedX, speedY, tolerance float32) (done chan error, err error) {
+	if speedX < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
 		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
-		speed = 0.25
+		speedX = 0.25
 	}
-	if speed > 1 {
+	if speedX > 1 {
 		log.Println("WARN: AutoFly speed too high, decreasing to 1.0 (max speed)")
-		speed = 1
+		speedX = 1
+	}
+	if speedY < 0.25 { // Probably wouldn't move when getting closer with a value lower than 0.25
+		log.Println("WARN: AutoFly speed too low, increasing to 0.25")
+		speedY = 0.25
+	}
+	if speedY > 1 {
+		log.Println("WARN: AutoFly speed too high, decreasing to 1.0 (max speed)")
+		speedY = 1
 	}
 	//log.Printf("FlyToXY called with XY: %d\n", dm)
 	if targetX > AutoXYLimitM || targetY > AutoXYLimitM ||
@@ -436,7 +444,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 
 	go func() {
 		var (
-			currentYaw         int16
+			currentYaw         float32
 			currentX, currentY float32
 			lowLight           bool
 		)
@@ -447,7 +455,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			auto := tello.autoXY
 			tello.autoXYMu.RUnlock()
 			if !auto {
-				// stop vertical movement
+				// stop XY movement
 				tello.ctrlMu.Lock()
 				tello.ctrlRx = 0
 				tello.ctrlRy = 0
@@ -475,6 +483,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			}
 
 			deltaX, deltaY := calcXYdeltas(currentYaw, currentX, currentY, targetX, targetY)
+			log.Println("Deltas: ", deltaX, ",", deltaY)
 
 			tello.ctrlMu.Lock()
 
@@ -482,13 +491,13 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			case deltaX <= tolerance && deltaX >= -tolerance:
 				tello.ctrlRx = 0
 			case deltaX >= AutoXYNearTargetM:
-				tello.ctrlRx = int16(autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRx = int16(autoPilotSpeedFast * speedX) // full throttle if =>AutoXYNearTargetM off target
 			case deltaX <= -AutoXYNearTargetM:
-				tello.ctrlRx = int16(-autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRx = int16(-autoPilotSpeedFast * speedX) // full throttle if =>AutoXYNearTargetM off target
 			case deltaX > tolerance:
-				tello.ctrlRx = int16(autoPilotSpeedSlow * speed) // half throttle
+				tello.ctrlRx = int16(autoPilotSpeedSlow * speedX) // half throttle
 			case deltaX < -tolerance:
-				tello.ctrlRx = int16(-autoPilotSpeedSlow * speed) // half throttle
+				tello.ctrlRx = int16(-autoPilotSpeedSlow * speedX) // half throttle
 			default:
 				log.Fatalf("Invalid state in AutoFlyToXY() - deltaX=%f", deltaX)
 			}
@@ -496,13 +505,13 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 			case deltaY <= tolerance && deltaY >= -tolerance:
 				tello.ctrlRy = 0
 			case deltaY >= AutoXYNearTargetM:
-				tello.ctrlRy = int16(autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRy = int16(autoPilotSpeedFast * speedY) // full throttle if =>AutoXYNearTargetM off target
 			case deltaY <= -AutoXYNearTargetM:
-				tello.ctrlRy = int16(-autoPilotSpeedFast * speed) // full throttle if =>AutoXYNearTargetM off target
+				tello.ctrlRy = int16(-autoPilotSpeedFast * speedY) // full throttle if =>AutoXYNearTargetM off target
 			case deltaY > tolerance:
-				tello.ctrlRy = int16(autoPilotSpeedSlow * speed) // half throttle
+				tello.ctrlRy = int16(autoPilotSpeedSlow * speedY) // half throttle
 			case deltaY < -tolerance:
-				tello.ctrlRy = int16(-autoPilotSpeedSlow * speed) // half throttle
+				tello.ctrlRy = int16(-autoPilotSpeedSlow * speedY) // half throttle
 			default:
 				log.Fatalf("Invalid state in AutoFlyToXY() - deltaY=%f", deltaY)
 			}
@@ -527,7 +536,7 @@ func (tello *Tello) AutoFlyToXYConfig(targetX, targetY, speed, tolerance float32
 	return done, nil
 }
 
-func calcXYdeltas(yawDeg int16, currX, currY, targetX, targetY float32) (dx, dy float32) {
+func calcXYdeltas(yawDeg float32, currX, currY, targetX, targetY float32) (dx, dy float32) {
 	adjustedYaw := float64(yawDeg)
 	if adjustedYaw < 0 {
 		adjustedYaw += 360.0
@@ -541,7 +550,7 @@ func calcXYdeltas(yawDeg int16, currX, currY, targetX, targetY float32) (dx, dy 
 }
 
 // Helper functions...
-func int16Abs(x int16) int16 {
+func float32Abs(x float32) float32 {
 	if x < 0 {
 		return -x
 	}

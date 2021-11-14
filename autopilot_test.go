@@ -196,7 +196,8 @@ func TestAutoFlyToXY(t *testing.T) {
 	if err != nil {
 		log.Fatalf("FlyToHeight failed with error %v", err)
 	}
-	<-done
+	err = <-done
+	log.Println("Change of height finished with returned error", err)
 
 	time.Sleep(2 * time.Second)
 	err = drone.SetHome()
@@ -204,21 +205,21 @@ func TestAutoFlyToXY(t *testing.T) {
 		t.Errorf("Error %v calling SetOrigin()", err)
 	}
 
-	done, err = drone.AutoFlyToXYConfig(0, 0.75, 0.25, 0.2)
+	done, err = drone.AutoFlyToXYConfig(0, 0.75, 0.25, 0.25, 0.2)
 	if err != nil { // should fly forward 75cm
 		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.75)", err)
 	}
-	<-done
+	err = <-done
 
-	log.Println("Navigation 1 completion notified")
+	log.Println("Navigation 1 completion notified with returned error", err)
 
-	done, err = drone.AutoFlyToXYConfig(0, 0.0, 0.25, 0.2)
+	done, err = drone.AutoFlyToXYConfig(0, 0.0, 0.25, 0.25, 0.2)
 	if err != nil { // should fly back
 		t.Errorf("Error %v calling AutoFlyTo(0.0, 0.0)", err)
 	}
-	<-done
+	err = <-done
 
-	log.Println("Navigation 2 completion notified")
+	log.Println("Navigation 2 completion notified with returned error", err)
 
 	drone.Land()
 

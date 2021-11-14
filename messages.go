@@ -250,7 +250,7 @@ type IMUData struct {
 	QuaternionW,
 	QuaternionX, QuaternionY, QuaternionZ float32
 	Temperature int16
-	Yaw         int16 // derived from Quat fields, -180 > degrees > +180
+	Yaw         float32 // derived from Quat fields, -180 > degrees > +180
 }
 
 // StickMessage holds the signed 16-bit values of a joystick update.
